@@ -1,0 +1,567 @@
+[
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-05",
+  "time_s": 0.0,
+  "start_position": {
+   "x": 27.93,
+   "y": 24.14
+  },
+  "end_position": {
+   "x": 29.91,
+   "y": 25.92
+  },
+  "related_frame_ids": [
+   0,
+   13
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "rb_press_hero-e000",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-05",
+  "recipient_id": "HAR-06",
+  "time_s": 1.3,
+  "start_position": {
+   "x": 30.41,
+   "y": 25.92
+  },
+  "end_position": {
+   "x": 38.97,
+   "y": 32.51
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   13,
+   24
+  ],
+  "event_id": "rb_press_hero-e001",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-06",
+  "time_s": 2.4,
+  "start_position": {
+   "x": 38.97,
+   "y": 32.51
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   24
+  ],
+  "event_id": "rb_press_hero-e002",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-06",
+  "time_s": 2.4,
+  "start_position": {
+   "x": 38.81,
+   "y": 32.53
+  },
+  "end_position": {
+   "x": 40.32,
+   "y": 34.85
+  },
+  "related_frame_ids": [
+   24,
+   35
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "rb_press_hero-e003",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-06",
+  "recipient_id": "HAR-04",
+  "time_s": 3.5,
+  "start_position": {
+   "x": 40.82,
+   "y": 34.85
+  },
+  "end_position": {
+   "x": 31.3,
+   "y": 45.09
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   35,
+   46
+  ],
+  "event_id": "rb_press_hero-e004",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-04",
+  "time_s": 4.6,
+  "start_position": {
+   "x": 31.3,
+   "y": 45.09
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   46
+  ],
+  "event_id": "rb_press_hero-e005",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-04",
+  "time_s": 4.6,
+  "start_position": {
+   "x": 31.11,
+   "y": 45.01
+  },
+  "end_position": {
+   "x": 33.87,
+   "y": 45.96
+  },
+  "related_frame_ids": [
+   46,
+   57
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "rb_press_hero-e006",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-04",
+  "recipient_id": "HAR-03",
+  "time_s": 5.7,
+  "start_position": {
+   "x": 34.37,
+   "y": 45.96
+  },
+  "end_position": {
+   "x": 39.8,
+   "y": 59.47
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   57,
+   75
+  ],
+  "event_id": "rb_press_hero-e007",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-03",
+  "time_s": 7.5,
+  "start_position": {
+   "x": 39.8,
+   "y": 59.47
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   75
+  ],
+  "event_id": "rb_press_hero-e008",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-03",
+  "time_s": 7.5,
+  "start_position": {
+   "x": 38.91,
+   "y": 59.93
+  },
+  "end_position": {
+   "x": 47.02,
+   "y": 61.51
+  },
+  "related_frame_ids": [
+   75,
+   100
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "rb_press_hero-e009",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-03",
+  "recipient_id": "HAR-11",
+  "time_s": 10.0,
+  "start_position": {
+   "x": 47.52,
+   "y": 61.51
+  },
+  "end_position": {
+   "x": 57.09,
+   "y": 63.88
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   100,
+   114
+  ],
+  "event_id": "rb_press_hero-e010",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-11",
+  "time_s": 11.4,
+  "start_position": {
+   "x": 57.09,
+   "y": 63.88
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   114
+  ],
+  "event_id": "rb_press_hero-e011",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-11",
+  "time_s": 11.4,
+  "start_position": {
+   "x": 57.78,
+   "y": 64.4
+  },
+  "end_position": {
+   "x": 61.83,
+   "y": 60.54
+  },
+  "related_frame_ids": [
+   114,
+   137
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "rb_press_hero-e012",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pressure_start",
+  "team_id": "CED",
+  "player_id": "CED-02",
+  "time_s": 13.1,
+  "start_position": {
+   "x": 62.44,
+   "y": 58.71
+  },
+  "related_player_ids": [
+   "HAR-11"
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_frame_ids": [
+   131
+  ],
+  "event_id": "rb_press_hero-e013",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pressure_end",
+  "team_id": "CED",
+  "player_id": "CED-02",
+  "time_s": 13.7,
+  "start_position": {
+   "x": 61.91,
+   "y": 59.29
+  },
+  "related_player_ids": [
+   "HAR-11"
+  ],
+  "related_frame_ids": [
+   131,
+   137
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "event_id": "rb_press_hero-e014",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-11",
+  "recipient_id": "HAR-08",
+  "time_s": 13.7,
+  "start_position": {
+   "x": 62.33,
+   "y": 60.54
+  },
+  "end_position": {
+   "x": 64.09,
+   "y": 47.77
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   137,
+   146
+  ],
+  "event_id": "rb_press_hero-e015",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-08",
+  "time_s": 14.6,
+  "start_position": {
+   "x": 64.09,
+   "y": 47.77
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   146
+  ],
+  "event_id": "rb_press_hero-e016",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-08",
+  "time_s": 14.6,
+  "start_position": {
+   "x": 64.07,
+   "y": 47.76
+  },
+  "end_position": {
+   "x": 69.57,
+   "y": 44.8
+  },
+  "related_frame_ids": [
+   146,
+   163
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "rb_press_hero-e017",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pressure_start",
+  "team_id": "CED",
+  "player_id": "CED-06",
+  "time_s": 16.2,
+  "start_position": {
+   "x": 71.81,
+   "y": 44.8
+  },
+  "related_player_ids": [
+   "HAR-08"
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_frame_ids": [
+   162
+  ],
+  "event_id": "rb_press_hero-e018",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pressure_end",
+  "team_id": "CED",
+  "player_id": "CED-06",
+  "time_s": 16.3,
+  "start_position": {
+   "x": 71.46,
+   "y": 44.79
+  },
+  "related_player_ids": [
+   "HAR-08"
+  ],
+  "related_frame_ids": [
+   162,
+   163
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "event_id": "rb_press_hero-e019",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-08",
+  "recipient_id": "HAR-09",
+  "time_s": 16.3,
+  "start_position": {
+   "x": 70.07,
+   "y": 44.8
+  },
+  "end_position": {
+   "x": 86.0,
+   "y": 37.04
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   163,
+   176
+  ],
+  "event_id": "rb_press_hero-e020",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-09",
+  "time_s": 17.6,
+  "start_position": {
+   "x": 86.0,
+   "y": 37.04
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   176
+  ],
+  "event_id": "rb_press_hero-e021",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pressure_start",
+  "team_id": "CED",
+  "player_id": "CED-04",
+  "time_s": 17.6,
+  "start_position": {
+   "x": 86.84,
+   "y": 35.76
+  },
+  "related_player_ids": [
+   "HAR-09"
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_frame_ids": [
+   176
+  ],
+  "event_id": "rb_press_hero-e022",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-09",
+  "time_s": 17.6,
+  "start_position": {
+   "x": 86.0,
+   "y": 37.04
+  },
+  "end_position": {
+   "x": 88.18,
+   "y": 36.45
+  },
+  "related_frame_ids": [
+   176,
+   187
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "rb_press_hero-e023",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "pressure_end",
+  "team_id": "CED",
+  "player_id": "CED-04",
+  "time_s": 18.7,
+  "start_position": {
+   "x": 88.91,
+   "y": 37.87
+  },
+  "related_player_ids": [
+   "HAR-09"
+  ],
+  "related_frame_ids": [
+   176,
+   187
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "event_id": "rb_press_hero-e024",
+  "scenario_id": "rb_press_hero"
+ },
+ {
+  "type": "shot",
+  "team_id": "HAR",
+  "player_id": "HAR-09",
+  "time_s": 18.7,
+  "start_position": {
+   "x": 88.68,
+   "y": 36.45
+  },
+  "end_position": {
+   "x": 100.7,
+   "y": 35.49
+  },
+  "recipient_id": null,
+  "outcome": "saved",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   187,
+   194
+  ],
+  "event_id": "rb_press_hero-e025",
+  "scenario_id": "rb_press_hero"
+ }
+]

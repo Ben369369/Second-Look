@@ -27,8 +27,8 @@ class CueError(ValueError):
 
 
 def _pick_insights(claims: list[Claim]) -> tuple[list[Claim], list[Claim]]:
-    """Up to 3 recorded insights (one of each kind first) plus the approved simulated claims,
-    which are shown together on one closing trade-off card."""
+    """Up to 3 recorded insights (one of each kind first) plus one closing trade-off card: the decision
+    rule's verdict when the answer has it (one sentence a broadcast can show), else the simulated claims."""
     recorded = [c for c in claims if c.claim_type in ("observed", "estimated", "insufficient_data")]
     picked: list[Claim] = []
     for kind in ("observed", "estimated", "insufficient_data"):
@@ -36,7 +36,9 @@ def _pick_insights(claims: list[Claim]) -> tuple[list[Claim], list[Claim]]:
         if c:
             picked.append(c)
     picked += [c for c in recorded if c not in picked]
-    sims = [c for c in claims if c.claim_type == "simulated"][:4]
+    sims = [c for c in claims if c.claim_type == "simulated"]
+    verdict = [c for c in sims if any(i.startswith("sim_verdict:") for i in c.fact_ids)]
+    sims = verdict[:1] or sims[:2]
     return picked[: MAX_INSIGHTS - (1 if sims else 0)], sims
 
 

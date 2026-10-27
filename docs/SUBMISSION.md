@@ -6,19 +6,16 @@ Recheck the organiser's current rules before submitting. Deadline as reviewed: *
 
 ## Short description (paste-ready)
 
-**Second Look — put your football opinions on the pitch.**
+**Second Look — the football argument, with the assumptions pulled out where they can be wrong.**
 
-Football arguments like "should the right-back have pressed earlier?" hide their assumptions. Second Look makes one inspectable.
+*Should the right-back have pressed earlier?* In this move, Second Look replays the next eight seconds 200 times for each choice. Pressing earlier lets the opponent into a dangerous position in 71 of 200 replays, against 30 when he holds his position: holding is clearly safer. Pressing with a teammate covering (37 of 200) is too close to call against holding. Make the cover arrive at 1.2 s instead of 0.6 s and the rule's verdict becomes "hold". The answer depends on that assumption, and the app shows it.
 
-- **Watch and measure.** You watch a synthetic match sequence and see measured evidence: distances, timings and passing lanes, each computed by code and linked to the moment on the pitch.
-- **Compare alternatives.** A transparent rule-based simulator replays the next eight seconds 200 times for each choice (hold, press earlier, press with cover). A recommendation rule fixed in advance reports a clear winner, or "no clear winner".
-- **Test the assumptions.** A challenger searches a fixed grid of assumptions (cover timing, attacker style) for settings that change the answer.
-- **Agents with a validator.** The investigation is orchestrated with Microsoft Agent Framework (planner, evidence analyst, challenger and producer agents calling the same tools). A deterministic validator rejects any claim whose numbers, players or evidence class don't match its cited facts.
-- **Two audiences.** Fans and analysts get different presentations of the same facts, and producers can export a timed overlay.
+- **Measured, then simulated, always labelled.** Distances, timings and passing lanes are computed by code and drawn on the pitch when you click them. Simulated results are always labelled as simulations, with intervals and a decision rule fixed before any result was seen.
+- **A challenger that tries to flip the answer.** It searches a grid of assumptions (cover timing, attacker style) for settings that change the finding.
+- **Agents that cannot invent the match.** Planner, evidence analyst, challenger and producer agents built with Microsoft Agent Framework call the same tools. Agents choose which facts to show; code writes every factual sentence. The only free text the model writes is short interpretations, which may not contain numbers, certainty or causal wording, invented events, or comparisons between choices, and are rejected otherwise. Questions it cannot answer, such as an unknown player or a what-if the simulator does not model, are refused instead of answered.
+- **One moment, three audiences.** A fan view in plain words, an analyst view with every number and the agents' trace, and a timed broadcast overlay where every card cites a fact.
 
-On 12 held-out synthetic variants it met its predeclared behaviour in 12 of 12 cases: answering when the data supports it, abstaining when there is no pressing moment or no tracking. It rejected 60 of 60 injected fabricated claims.
-
-All data is synthetic, and all teams and players are fictional.
+On 12 held-out synthetic variants it met its predeclared behaviour in 12 of 12, rejected all 139 injected fabricated claims across 14 kinds of fabrication, and refused all 36 off-catalogue questions. All data is synthetic, and the simulator is illustrative, not a prediction. The public site runs the same tools and validator without a model, so it never depends on one being up. The live agents run on-device with Foundry Local, because cloud model deployment was blocked on our subscription (Azure error 715-123420).
 
 ## Microsoft technology (actual use)
 
@@ -34,7 +31,7 @@ Hosting is Vercel (not Microsoft).
 
 ## Category
 
-Best Multi-Agent Orchestration is the natural fit: distinct agent roles with typed handoffs, a challenger, deterministic validation with a bounded repair, and labelled fallback. Live-model results come from Foundry Local on one laptop (one live smoke run plus UI checks), not a full live evaluation; the cloud model was blocked by the Azure hold. Say so.
+Best Multi-Agent Orchestration is the natural fit: distinct agent roles with typed handoffs, a challenger whose verdict reaches the producer, code-rendered facts with a deterministic validator and a bounded repair, and a labelled fallback. Describe it as a fixed pipeline in which the model cannot mint numbers, not as agents debating. Live-model results come from Foundry Local on one laptop (one live smoke run plus UI checks), not a full live evaluation; the cloud model was blocked by the Azure hold. Say so.
 
 ## Checklist
 

@@ -72,7 +72,7 @@ Earlier:
 **Stage 7 (27 Oct, complete):**
 - 12 held-out fixtures with predeclared expectations. Event-only fixtures are supported by the validator and generator.
 - `scripts/evaluate.py` writes `docs/EVALUATION.md` and `docs/evaluation_results.json`.
-- Results: expectation met in 12/12 variants (including 2 correct abstentions with no press, and event-only refusing tracked and simulated claims); 48/48 investigations completed; 0/156 shown claims fail re-validation; 60/60 injected fabrications rejected.
+- Results: expectation met in 12/12 variants (including 2 correct abstentions with no press, and event-only refusing tracked and simulated claims); 48/48 investigations completed; 0/156 shown claims fail re-validation; 60/60 injected fabrications rejected. (Superseded on 27 Oct evening: see the reviewer fixes below.)
 - The challenger finds a baseline-changing setting on 1 of 9 press variants (ev04, 6/12 cells).
 - Pipelines B and C-live were not run (no model deployment).
 - This also covers the Stage 4 "held-out variant" gate: ev10/ev11 withhold the pressing finding, and ev12 withholds spatial and simulated claims.
@@ -150,6 +150,7 @@ Offline only. No Azure resources created and no credentials configured. Nothing 
 
 ## Next concrete task
 
+00. **Done (27 Oct evening): reviewer fixes.** Two reviewers showed the validator accepted rewordings such as "Halvorsen scored 8.5 goals", and the router answered "Should Messi press earlier?" about Halvorsen. Fixed: factual claims are now the code-rendered sentences of the facts the producer selects; interpretations are restricted; paired comparisons and the rule's verdict are facts (`sim_compare`, `sim_verdict`); the challenger's verdict reaches the producer; the router refuses unknown players and unmodelled what-ifs (also before any model call), resolves "number 8" and "attacking #8", and matches whole words. Evaluation: 139/139 fabrications rejected across 14 kinds, 36/36 off-catalogue questions refused; the re-check is described as a consistency check.
 0. **Done (27 Oct): live model via Foundry Local.** `SECOND_LOOK_MODE=foundry_local` runs the four agents on `qwen3-8b` on-device. `SECOND_LOOK_LIVE_TESTS=1 pytest tests/test_agents.py -k live` passed: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU. A UI run also completed (provider badge "AI agents · on-device · qwen3-8b", 4 claims, 0 rejected, ~1.4 min, one malformed challenger reply repaired). Local-model adaptations: JSON shape hints in the prompt instead of `response_format`, `/no_think`, json-repair before schema validation, token caps, an HTTP timeout, `max_invocations=1` on data tools, and one local investigation at a time. `tests/conftest.py` keeps the regular suite offline (77 passed, 1 skipped).
 1. **Blocked — Azure model deployment hold (27 Oct, early hours):**
    - Created on Azure for Students (bn7622@princeton.edu, Switzerland North; the subscription policy only allows italynorth, switzerlandnorth, spaincentral, uaenorth and austriaeast): resource group `second-look-rg`, AIServices resource `secondlook-chui-ai`, and project `second-look` (endpoint `https://secondlook-chui-ai.services.ai.azure.com/api/projects/second-look`).

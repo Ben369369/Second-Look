@@ -166,3 +166,46 @@ def test_router_unsupported_and_clarify(hero):
     res = ask(view, "How far did #2 run?")
     assert res.status == "clarify" and "Halvorsen" in res.notes[0] and "Abara" in res.notes[0]
     assert ask(view, "How far did Cedar #2 run?").status == "answered"
+
+
+@pytest.mark.parametrize(
+    "question,status,intent",
+    [
+        # Decision questions the simulator does not model are refused, with the passing picture as context.
+        ("Should Kiprono make a run or hold?", "unsupported", None),
+        ("Should the attacking number 8 make a run or hold his ground to receive the pass after number 11 gets the ball?", "unsupported", None),
+        ("What if all the players decided to park the bus?", "unsupported", None),
+        ("What if the midfielder dropped to defend?", "unsupported", None),
+        # Unknown players are never replaced by the default defender.
+        ("Should Messi press earlier?", "clarify", "press_timing"),
+        ("Messi should have pressed earlier", "clarify", "press_timing"),
+        # The modelled decision, phrased either way.
+        ("Should the right-back have pressed earlier?", "answered", "press_timing"),
+        ("Should Halvorsen have held his position?", "answered", "press_timing"),
+        # Whole-word keywords: measurement questions still route to measurements.
+        ("Who covered the most ground?", "answered", "running"),
+        ("How far did Rossi's pass travel?", "answered", "pass_distances"),
+        ("Tell me who pressed whom", "answered", "pressure"),
+    ],
+)
+def test_router_decisions_and_unknown_players(hero, question, status, intent):
+    res = ask(make_view(hero), question)
+    assert (res.status, res.intent) == (status, intent), res.notes
+
+
+def test_unmodelled_whatif_refusal_shows_passing_context(hero):
+    view = make_view(hero)
+    res = ask(view, "Should the attacking number 8 make a run or hold his ground?")
+    assert res.status == "unsupported" and "only simulate one decision" in res.notes[0]
+    assert res.facts and all(f.evidence_class == "estimated" for f in res.facts)
+    assert any("Kiprono" in f.statement for f in res.facts)
+
+
+def test_shirt_numbers_in_words_and_attacking_side(hero):
+    view = make_view(hero)
+    from app.investigations.questions import resolve_players
+
+    assert resolve_players(view, "how far did the attacking number 8 run")[0] == ["HAR-08"]
+    assert resolve_players(view, "how far did harbor no. 8 run")[0] == ["HAR-08"]
+    assert resolve_players(view, "how far did the defending number 2 run")[0] == ["CED-02"]
+    assert resolve_players(view, "how far did number 8 run")[2]  # ambiguous without a side

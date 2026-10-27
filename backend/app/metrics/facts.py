@@ -383,7 +383,98 @@ def sim_run_id(f: Fact) -> str | None:
 
 
 def simulated_facts(view: SequenceView, result: ComparisonResult) -> list[Fact]:
-    """One SIMULATED fact per intervention, rendered from the comparison's actual counts."""
+    """SIMULATED facts rendered from the comparison's actual counts: one per intervention, one per
+    paired comparison against the safest choice, and the predeclared rule's verdict. Comparisons are
+    facts so that no model ever has to word a direction ("safer than") itself."""
+    out = _action_facts(view, result)
+    out += _comparison_facts(view, result)
+    out.append(_verdict_fact(view, result))
+    return out
+
+
+def _sim_fact(view: SequenceView, result: ComparisonResult, fact_id: str, metric: str, subjects: list[str], value: float | None, unit: str, statement: str, plain: str) -> Fact:
+    b = result.branch
+    return Fact(
+        fact_id=f"{fact_id}@{result.run_id}",
+        evidence_class="simulated",
+        metric=metric,
+        subject_ids=subjects,
+        value=value,
+        unit=unit,
+        time_window=TimeWindow(start_s=b.time_s, end_s=b.time_s),
+        focus_time_s=b.time_s,
+        source_event_ids=[],
+        source_frame_range=(b.frame_id, b.frame_id),
+        method_version=result.policy_version,
+        coverage=_coverage(view, 1, 1, f"run {result.run_id}, {result.config.rollouts} rollouts per action"),
+        limitations=result.assumptions,
+        statement=statement,
+        plain=plain,
+    )
+
+
+def pair_is_clear(diff: float, ci_low: float) -> bool:
+    from app.simulation.compare import MARGIN
+
+    return diff >= MARGIN and ci_low > 0
+
+
+def _comparison_facts(view: SequenceView, result: ComparisonResult) -> list[Fact]:
+    b = result.branch
+    counts = {a.action: a.danger for a in result.actions}
+    out = []
+    for d in result.diffs:
+        if d.metric != "danger":
+            continue
+        better, other = counts[d.better], counts[d.other]
+        clear = pair_is_clear(d.diff, d.ci95[0])
+        verdict = "clear under the predeclared rule" if clear else "not clear under the predeclared rule"
+        subjects = [b.presser, b.carrier] + ([b.cover] if "press_with_cover" in (d.better, d.other) else [])
+        out.append(
+            _sim_fact(
+                view, result, f"sim_compare:{d.better}-vs-{d.other}", "sim_compare", subjects,
+                round(d.diff * 100, 1), "percentage points",
+                statement=(
+                    f"Simulated, paired comparison: '{LABEL[d.other]}' ended in a dangerous possession in {other.count} of {other.n} rollouts "
+                    f"against {better.count} of {better.n} for '{LABEL[d.better]}', a difference of {d.diff * 100:.1f} points "
+                    f"(95% interval {d.ci95[0] * 100:.1f} to {d.ci95[1] * 100:.1f}); {verdict}."
+                ),
+                plain=(
+                    f"In the simulation, Harbor got into danger {other.count} times out of {other.n} when {_surname(view, b.presser)} chose to "
+                    f"{SIM_PLAIN[d.other]}, against {better.count} when choosing to {SIM_PLAIN[d.better]}. "
+                    + ("That gap is big and steady enough to call." if clear else "That gap is too small or too uncertain to call.")
+                ),
+            )
+        )
+    return out
+
+
+def _verdict_fact(view: SequenceView, result: ComparisonResult) -> Fact:
+    b, rec = result.branch, result.recommendation
+    pairs = [d for d in result.diffs if d.metric == "danger"]
+    clear = [d for d in pairs if pair_is_clear(d.diff, d.ci95[0])]
+    open_ = [d for d in pairs if d not in clear]
+    if rec.status == "recommend" and rec.action:
+        statement = f"Simulated, predeclared rule: recommend '{LABEL[rec.action]}', which is clearly safer than every alternative."
+        plain = f"In the simulation, choosing to {SIM_PLAIN[rec.action]} was clearly the safest option."
+    elif rec.status == "inconclusive":
+        statement = "Simulated, predeclared rule: inconclusive, too few rollouts to decide."
+        plain = "The simulation did not run enough tries to decide."
+    else:
+        parts = [f"'{LABEL[d.better]}' is clearly safer than '{LABEL[d.other]}'" for d in clear]
+        parts += [f"'{LABEL[d.better]}' versus '{LABEL[d.other]}' is unresolved" for d in open_]
+        statement = "Simulated, predeclared rule: no single choice is clearly best; " + "; ".join(parts) + "."
+        pplain = [f"choosing to {SIM_PLAIN[d.better]} was clearly safer than choosing to {SIM_PLAIN[d.other]}" for d in clear]
+        pplain += [f"choosing to {SIM_PLAIN[d.better]} or to {SIM_PLAIN[d.other]} is too close to call" for d in open_]
+        plain = "In the simulation, " + ", but ".join(pplain) + "."
+    subjects = [b.presser, b.carrier, b.cover]
+    return _sim_fact(view, result, "sim_verdict:rule", "sim_verdict", subjects, None, "", statement=statement, plain=plain)
+
+
+LABEL = {"hold": "hold position", "press_earlier": "press earlier", "press_with_cover": "press with cover"}
+
+
+def _action_facts(view: SequenceView, result: ComparisonResult) -> list[Fact]:
     b = result.branch
     out = []
     for a in result.actions:

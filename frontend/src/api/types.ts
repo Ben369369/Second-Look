@@ -326,6 +326,7 @@ export interface InvestigationState {
   simulation_run_ids: string[];
   challenge_summary: string | null;
   claims: Claim[];
+  casual_claims: Claim[];
   rejected_claims: { claim: Claim; errors: string[] }[];
   notes: string[];
   errors: string[];

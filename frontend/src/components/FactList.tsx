@@ -6,7 +6,7 @@ import { formatValue, METRIC_LABEL } from "../features/evidence";
 import { useStudio } from "../features/studio";
 import { formatClock } from "../replay/model";
 
-export const CLASS_COLOR: Record<Fact["evidence_class"], string> = { observed: "navy", estimated: "grape", simulated: "teal" };
+export const CLASS_COLOR: Record<Fact["evidence_class"], string> = { observed: "navy", estimated: "grape", simulated: "cyan" };
 
 interface Props {
   facts: Fact[];

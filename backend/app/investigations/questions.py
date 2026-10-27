@@ -13,13 +13,12 @@ from dataclasses import dataclass, field
 from app.metrics.facts import FactBuilder, simulated_facts, with_plain
 from app.metrics.view import SequenceView
 from app.schemas import AnswerSentence, AskResponse, CompareRequest, Fact, MatchEvent, QuestionOption, ReplayBundle
-from app.simulation.compare import LABELS as SIM_LABELS
 from app.simulation.compare import compare
 from app.simulation.engine import BranchError
 
 CATALOGUE: list[QuestionOption] = [
     QuestionOption(intent="press_timing", label="Pressing decision", example="Should the right-back have pressed earlier?"),
-    QuestionOption(intent="passing_options", label="Passing options", example="What passing options did #11 have?"),
+    QuestionOption(intent="passing_options", label="Passing options", example="What passing options did Harbor's #11 have?"),
     QuestionOption(intent="pass_distances", label="Pass lengths", example="How long were Harbor's passes?"),
     QuestionOption(intent="pass_completion", label="Pass completion", example="How many passes did Harbor complete?"),
     QuestionOption(intent="possession", label="Possession spells", example="How long did Harbor keep the ball?"),
@@ -35,15 +34,34 @@ RULES: list[tuple[str, tuple[str, ...]]] = [
     ("passing_options", ("option", "lane", "open", "available", "who could he pass", "who could she pass")),
     ("final_third", ("final third", "attacking third")),
     ("pass_completion", ("complet", "accura", "how many passes", "misplaced")),
-    ("pass_distances", ("how long were", "pass length", "how far did the pass", "longest pass", "pass distance", "how far was the pass", "passes travel")),
+    ("pass_distances", ("how long were", "pass length", "how far did the pass", "longest pass", "pass distance", "how far was the pass", "passes travel", "pass travel", "pass go")),
     ("possession", ("possession", "keep the ball", "kept the ball", "hold on to")),
-    ("running", ("run", "ran", "distance covered", "cover", "speed", "fast", "sprint", "ground")),
+    ("running", ("run", "ran", "distance covered", "covered the most", "cover the most", "most ground", "ground covered", "speed", "fast", "sprint", "how far did")),
     ("pressure", ("pressure", "pressed", "pressing", "press", "closed down", "close down")),
 ]
+# Keywords match at the start of a word ("complet" matches "completed"; "run" does not match "Brunner").
+RULE_RES = [(name, re.compile(r"\b(" + "|".join(re.escape(w) for w in words) + ")")) for name, words in RULES]
 
 ROLE_WORDS = {
     "right-back": "RB", "right back": "RB", "left-back": "LB", "left back": "LB",
     "goalkeeper": "GK", "keeper": "GK", "striker": "ST", "winger": "LW",
+}
+
+# "What should have happened" questions. Only the right-back's pressing decision can be simulated.
+DECISION_RE = re.compile(r"\b(should|shouldn't|what if|instead|would (it|he|she|they) have|had (he|she|they)|better (to|if|off)|could (he|she|they) have)\b")
+PRESS_DECISION_RE = re.compile(r"\b(press(ed|ing)?|close[sd]? (him|her|them) down|closing down)\b")
+OTHER_ACTION_RE = re.compile(
+    r"\b(make (a|his|her|the) run|run (in )?(behind|forward|into|in)|made a run|drop(ped|ping)? (back|deep|in)|park(ed|ing)? the bus|"
+    r"low block|shoot|shot|cross(ed)?|dribble|pass(ed)? (it|the ball)|switch(ed)? play|overlap)\b"
+)
+SHIRT_RE = re.compile(r"(?:#\s?|\bnumber\s|\bno\.?\s?|\bshirt\s)(\d{1,2})\b")
+# Capitalised words that are not player names (question words, football terms, team words).
+NOT_NAMES = {
+    "should", "would", "could", "what", "who", "whom", "how", "why", "when", "where", "which", "was", "were", "did", "does",
+    "do", "is", "are", "can", "if", "the", "a", "an", "and", "or", "in", "at", "on", "after", "before", "then", "i", "he",
+    "she", "they", "his", "her", "their", "it", "fc", "cedar", "harbor", "right", "left", "back", "ball", "team", "number",
+    "no", "shirt", "attacking", "defending", "keeper", "goalkeeper", "striker", "winger", "midfielder", "defender",
+    "forward", "fan", "analyst", "simulation", "press", "pressing", "pass", "passing", "hold", "holding", "yes", "ok",
 }
 
 
@@ -53,6 +71,8 @@ class Route:
     players: list[str] = field(default_factory=list)
     teams: list[str] = field(default_factory=list)
     ambiguous: list[str] = field(default_factory=list)
+    unknown_names: list[str] = field(default_factory=list)
+    other_decision: bool = False  # a "should have" question about something the simulator does not model
 
 
 def _norm(text: str) -> str:
@@ -67,8 +87,15 @@ def resolve_players(view: SequenceView, q: str) -> tuple[list[str], list[str], l
     for p in view.players.values():
         if p.name.split()[-1].lower() in q and p.player_id not in players:
             players.append(p.player_id)
-    for num in re.findall(r"#\s?(\d{1,2})\b", q):
-        cands = [p for p in view.players.values() if p.number == int(num) and (not teams or p.team_id in teams)]
+    # "attacking #8" / "defending number 4": the team in possession, or the other one.
+    side = teams
+    if not teams and re.search(r"\b(attacking|attacker|in possession)\b", q):
+        side = [_attacking_team(view, Route(intent=None))]
+    elif not teams and re.search(r"\b(defending|defender)\b", q):
+        att = _attacking_team(view, Route(intent=None))
+        side = [t.team_id for t in view.manifest.teams if t.team_id != att]
+    for num in SHIRT_RE.findall(q):
+        cands = [p for p in view.players.values() if p.number == int(num) and (not side or p.team_id in side)]
         if len(cands) == 1:
             if cands[0].player_id not in players:
                 players.append(cands[0].player_id)
@@ -76,7 +103,7 @@ def resolve_players(view: SequenceView, q: str) -> tuple[list[str], list[str], l
             notes.append(f"#{num} could be {' or '.join(view.label(c.player_id) for c in cands)}")
     for word, role in ROLE_WORDS.items():
         if word in q:
-            cands = [p for p in view.players.values() if p.role == role and (not teams or p.team_id in teams)]
+            cands = [p for p in view.players.values() if p.role == role and (not side or p.team_id in side)]
             if len(cands) == 1 and cands[0].player_id not in players:
                 players.append(cands[0].player_id)
             elif len(cands) > 1:
@@ -84,11 +111,38 @@ def resolve_players(view: SequenceView, q: str) -> tuple[list[str], list[str], l
     return players, teams, notes
 
 
+def unknown_names(view: SequenceView, question: str) -> list[str]:
+    """Capitalised, name-like words that match no player or team in this sequence (e.g. "Messi")."""
+    known = {w.lower() for p in view.players.values() for w in re.split(r"[\s.]+", p.name) if w}
+    known |= {w.lower() for t in view.manifest.teams for w in t.name.split()}
+    out: list[str] = []
+    for m in re.finditer(r"\b[A-Z][a-zA-Z'’-]+", question):
+        w = m.group(0)
+        base = re.sub(r"['’]s$", "", w).lower()
+        if base in known or base in NOT_NAMES or w in out:
+            continue
+        # A capitalised sentence opener ("Tell me ...") is only a name if a verb follows ("Messi should ...").
+        opener = not question[: m.start()].strip() or question[: m.start()].rstrip()[-1] in ".?!"
+        if opener and not re.match(r"\s+(should|was|did|is|could|would|has|had|pressed|made|ran)\b", question[m.end():], re.I):
+            continue
+        out.append(w)
+    return out
+
+
 def route(view: SequenceView, question: str) -> Route:
     q = _norm(question)
-    intent = next((name for name, words in RULES if any(w in q for w in words)), None)
+    intent = next((name for name, rx in RULE_RES if rx.search(q)), None)
     players, teams, notes = resolve_players(view, q)
-    return Route(intent=intent, players=players, teams=teams, ambiguous=notes)
+    r = Route(intent=intent, players=players, teams=teams, ambiguous=notes, unknown_names=unknown_names(view, question))
+    if DECISION_RE.search(q):
+        # A decision question is the pressing decision only if it is about pressing and no other action.
+        if PRESS_DECISION_RE.search(q) and not OTHER_ACTION_RE.search(q):
+            r.intent = "press_timing"
+        elif re.search(r"\b(right-back|right back|halvorsen)\b", q) and re.search(r"\b(hold|held|stay(ed)?)\b", q) and not OTHER_ACTION_RE.search(q):
+            r.intent = "press_timing"
+        else:
+            r.other_decision = True
+    return r
 
 
 # ---------------------------------------------------------------------------
@@ -181,19 +235,14 @@ def _add_simulation(a: Answer, presser: str) -> None:
         a.notes.append(f"No simulated comparison: {exc}.")
         return
     facts = [a.add(f) for f in simulated_facts(v, result)]
+    # The answer states the verdict and the paired comparisons; per-choice counts stay in the evidence.
     for f in facts:
-        a.say(f)
-    rec = result.recommendation
-    verdict = (
-        f"Under the predeclared decision rule, the simulations favour '{SIM_LABELS[rec.action].lower()}'."
-        if rec.status == "recommend" and rec.action
-        else "Under the predeclared decision rule, no choice is clearly best in these simulations."
-    )
-    a.sentences.append(AnswerSentence(text=verdict, fact_ids=[f.fact_id for f in facts if f is not None]))
+        if f is not None and f.metric in ("sim_verdict", "sim_compare"):
+            a.say(f)
     a.notes.append(
         f"Simulated results come from a rule-based model ({result.policy_version}, {result.config.rollouts} rollouts per choice, "
         f"cover delay {result.config.cover_delay_s} s, {result.config.attacker_policy} attackers). They are counts inside the simulator, "
-        "not real-world probabilities. Change the assumptions on the What if? page."
+        "not real-world probabilities. Change the assumptions on the Three choices page."
     )
 
 
@@ -294,6 +343,27 @@ def ask(view: SequenceView, question: str) -> AskResponse:
         dataset_hash=view.manifest.dataset_hash,
         supported_questions=CATALOGUE,
     )
+    if r.unknown_names:
+        names = ", ".join(r.unknown_names[:3])
+        return AskResponse(
+            **base, status="clarify", intent=r.intent, intent_label=LABELS.get(r.intent or ""), answer=[], facts=[], refused=[],
+            notes=[f"There is no player called {names} in this sequence. Name a Cedar FC or Harbor FC player, or use a shirt number such as #8."],
+        )
+    if r.other_decision:
+        # Honest refusal: only the right-back's press can be simulated. Show the passing picture at that moment instead.
+        a = Answer(view)
+        # The ball carrier at the pressing moment (the player Cedar's right-back pressed), else the latest carrier.
+        press = next((e for e in view.events if e.type == "pressure_start" and view.players[e.player_id].role == "RB"), None)
+        carrier = [press.related_player_ids[0]] if press and press.related_player_ids else []
+        answer_passing_options(a, Route(intent="passing_options", players=carrier))
+        return AskResponse(
+            **base, status="unsupported", intent=None, intent_label=None, answer=a.sentences, facts=a.facts, refused=a.b.refused,
+            notes=[
+                "Second Look can only simulate one decision in this move: whether Cedar's right-back should have held, pressed "
+                "earlier, or pressed with cover. It cannot test other what-ifs (runs, a deeper block, a midfielder dropping) yet, "
+                "because each needs its own behaviour rules and tests. Here is what the data shows about the passing options at that moment."
+            ],
+        )
     if r.intent is None:
         return AskResponse(
             **base, status="unsupported", intent=None, intent_label=None, answer=[], facts=[], refused=[],
@@ -309,6 +379,11 @@ def ask(view: SequenceView, question: str) -> AskResponse:
         r.players = [p for p in view.players if view.players[p].role == "RB" and _events(view, "pressure_start", player_id=p)]
     a = Answer(view)
     status = HANDLERS[r.intent](a, r)
+    if r.intent == "press_timing":
+        # Lead with the finding: the rule's verdict, then its comparisons, then what was measured.
+        rank = {"sim_verdict": 0, "sim_compare": 1}
+        metric = {f.fact_id: f.metric for f in a.facts}
+        a.sentences.sort(key=lambda s: min((rank.get(metric.get(i, ""), 2) for i in s.fact_ids), default=2))
     return AskResponse(
         **base, status=status, intent=r.intent, intent_label=LABELS[r.intent], answer=a.sentences,
         facts=a.facts, refused=a.b.refused, notes=a.notes,

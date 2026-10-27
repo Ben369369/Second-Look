@@ -16,14 +16,20 @@ const navy: MantineColorsTuple = [
 
 export const BRAND_NAVY = navy[9];
 
+// A tactics sheet, not an admin panel: one sans for the interface, one serif for questions and findings,
+// no borders by default (only the selected or winning item gets a navy top rule, see app.css).
+export const SERIF = '"Newsreader", "Source Serif 4", Georgia, "Times New Roman", serif';
+const SANS = '"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif';
+
 export const theme = createTheme({
   primaryColor: "navy",
   primaryShade: 8,
   colors: { navy },
-  defaultRadius: "md",
-  headings: { fontWeight: "700" },
+  fontFamily: SANS,
+  headings: { fontFamily: SERIF, fontWeight: "600" },
+  defaultRadius: "sm",
   components: {
-    Paper: { defaultProps: { withBorder: true, radius: "md" } },
-    Card: { defaultProps: { withBorder: true, radius: "md", padding: "lg" } },
+    Paper: { defaultProps: { withBorder: false, radius: "sm" } },
+    Card: { defaultProps: { withBorder: false, radius: "sm", padding: "lg" } },
   },
 });

@@ -64,11 +64,13 @@ def honest_script(producer_extra=None, repair_ok=True):
             return {"text": json.dumps({"finding_robust": False, "concerns": ["The answer depends on how quickly the cover arrives."]})}
         if role == "producer":
             facts = facts_in_prompt(messages)
-            claims = [{"claim_type": f["class"], "text": f["statement"], "fact_ids": [f["fact_id"]]} for f in facts[:3]]
-            claims.append({"claim_type": "interpretation", "text": "Pressing alone looks risky here; the cover timing matters.", "fact_ids": []})
+            ids = [f["fact_id"] for f in facts if f["class"] != "simulated"][:2]
+            ids += [f["fact_id"] for f in facts if f["fact_id"].startswith(("sim_compare", "sim_verdict"))]
+            sim = next(f["fact_id"] for f in facts if f["class"] == "simulated")
+            interps = [{"text": "In the simulation, the answer depends on how quickly the cover arrives.", "fact_ids": [sim]}]
             if producer_extra and (turn == 0 or not repair_ok):
-                claims.append(producer_extra(facts))
-            return {"text": json.dumps({"claims": claims})}
+                interps.append(producer_extra(facts))
+            return {"text": json.dumps({"fact_ids": ids, "interpretations": interps})}
         raise AssertionError(role)
 
     return script
@@ -91,19 +93,27 @@ def test_real_tool_calls_and_typed_handoffs(bundle):
     assert set(client.calls) == {"planner", "evidence analyst", "challenger", "producer"}
 
 
-def test_altered_number_is_rejected_and_repaired_once(bundle):
+def test_number_in_interpretation_is_rejected_and_repaired_once(bundle):
     def altered(facts):
         f = next(x for x in facts if x["class"] == "observed")
-        return {"claim_type": "observed", "text": re.sub(r"\d+\.\d", "9.9", f["statement"], count=1), "fact_ids": [f["fact_id"]]}
+        return {"text": "Halvorsen was 9.9 m away, far too slow.", "fact_ids": [f["fact_id"]]}
 
     state, client = run(bundle, honest_script(producer_extra=altered))
-    assert any("numbers not found" in e for r in state.rejected_claims for e in r.errors)
+    assert any("numbers" in e for r in state.rejected_claims for e in r.errors)
     assert client.calls.count("producer") == 2  # exactly one repair round
     assert all("9.9" not in c.text for c in state.claims)
 
 
+def test_fact_sentences_come_from_code_not_the_model(bundle):
+    state, _ = run(bundle, honest_script())
+    facts = {f.fact_id: f for f in state.facts}
+    factual = [c for c in state.claims if c.claim_type != "interpretation"]
+    assert factual and all(c.text == facts[c.fact_ids[0]].statement for c in factual)
+    assert any(c.fact_ids[0].startswith("sim_verdict") for c in factual)
+
+
 def test_repair_is_bounded_when_the_model_keeps_failing(bundle):
-    bogus = lambda facts: {"claim_type": "observed", "text": "Halvorsen sprinted 99.9 m.", "fact_ids": ["made-up-id"]}  # noqa: E731
+    bogus = lambda facts: {"text": "Halvorsen sprinted 99.9 m.", "fact_ids": ["made-up-id"]}  # noqa: E731
     state, client = run(bundle, honest_script(producer_extra=bogus, repair_ok=False))
     assert client.calls.count("producer") == 2
     assert state.status == "complete"
@@ -130,6 +140,50 @@ def test_validator_rejects_fabrication_and_misattached_citations(bundle):
     assert validate_claim(Claim(claim_type="interpretation", text="Pressing fails 36% of the time.", fact_ids=[]), facts, players)
     # The honest statement passes
     assert validate_claim(Claim(claim_type="observed", text=dist.statement, fact_ids=[dist.fact_id]), facts, players) == []
+
+
+@pytest.mark.parametrize(
+    "claim_type,text,cite",
+    [
+        # Rewordings of a real fact: wrong unit, wrong event, wrong value (incl. small numbers once ignored).
+        ("observed", "Halvorsen scored 8.5 goals.", "dist"),
+        ("observed", "Halvorsen was 8.5 seconds away.", "dist"),
+        ("observed", "Halvorsen was 2 metres away.", "dist"),
+        ("observed", "Rossi was 8.5 m from Halvorsen.", "dist"),
+        # Reversed comparison, written by hand instead of citing the comparison fact.
+        ("simulated", "In the simulation, pressing earlier was safer than holding position.", "sim"),
+        # Unsupported certainty, causes, counterfactuals and events in interpretations.
+        ("interpretation", "Pressing earlier is guaranteed to prevent dangerous possession.", None),
+        ("interpretation", "Pressing earlier is guaranteed to prevent dangerous possession.", "sim"),
+        ("interpretation", "Halvorsen pressed late because Rossi was too quick.", "dist"),
+        ("interpretation", "If he had pressed earlier, Harbor would have been stopped.", "dist"),
+        ("interpretation", "In the simulation, holding is better than pressing earlier.", "sim"),
+        ("interpretation", "Halvorsen's late press let Harbor score.", "dist"),
+        ("interpretation", "Pressing earlier fails about three times in ten in the simulation.", "sim"),
+    ],
+)
+def test_validator_rejects_semantic_fabrications(bundle, claim_type, text, cite):
+    view = make_view(bundle)
+    res = ask(view, QUESTION)
+    facts = {f.fact_id: f for f in res.facts}
+    ids = {
+        "dist": [next(f.fact_id for f in res.facts if f.metric == "defender_distance")],
+        "sim": [f.fact_id for f in res.facts if f.evidence_class == "simulated"],
+        None: [],
+    }[cite]
+    assert validate_claim(Claim(claim_type=claim_type, text=text, fact_ids=ids), facts, view.players)
+
+
+def test_comparison_and_verdict_facts_match_the_counts(bundle):
+    view = make_view(bundle)
+    res = ask(view, QUESTION)
+    by = {f.metric: f for f in res.facts if f.evidence_class == "simulated"}
+    verdict = next(f for f in res.facts if f.metric == "sim_verdict")
+    assert "'hold position' is clearly safer than 'press earlier'" in verdict.statement
+    assert "'hold position' versus 'press with cover' is unresolved" in verdict.statement
+    early = next(f for f in res.facts if f.fact_id.startswith("sim_compare:hold-vs-press_earlier"))
+    assert "71 of 200" in early.statement and "30 of 200" in early.statement and "clear under" in early.statement
+    assert by["sim_compare"].evidence_class == "simulated"
 
 
 def test_unsupported_intent_returns_supported_options(bundle):
@@ -199,3 +253,38 @@ def test_live_model_smoke(bundle):
     assert state.provider_mode == settings.mode and not state.errors, state.errors  # a live run, not a fallback
     assert state.model_calls >= 4 and state.tool_calls >= 2
     assert state.claims and all(not validate_claim(c, {f.fact_id: f for f in state.facts}, make_view(bundle).players) for c in state.claims)
+
+
+@pytest.mark.parametrize("question", ["Should Messi press earlier?", "Should Kiprono make a run or hold?"])
+def test_model_path_refuses_before_calling_the_model(bundle, question):
+    state, client = run(bundle, honest_script(), question=question)
+    assert client.calls == []  # deterministic guard, no model call
+    assert state.outcome in ("clarify", "unsupported") and state.provider_mode == "foundry"
+    assert not any(c.claim_type == "simulated" for c in state.claims)
+
+
+def test_challenger_verdict_is_checked_against_its_search(bundle):
+    base = honest_script()
+
+    def script(role, messages, turn):
+        if role == "challenger" and turn >= 2:
+            return {"text": json.dumps({"finding_robust": True, "concerns": []})}  # contradicts its own search
+        return base(role, messages, turn)
+
+    state, _ = run(bundle, script)
+    assert any("search result is used" in t.summary for t in state.trace)
+    assert any("passed to the producer: not robust" in t.summary for t in state.trace)
+
+
+def test_unusable_evidence_selection_degrades_only_that_step(bundle):
+    base = honest_script()
+
+    def script(role, messages, turn):
+        if role == "evidence analyst" and turn > 0:
+            return {"text": "not json"}
+        return base(role, messages, turn)
+
+    state, _ = run(bundle, script)
+    assert state.provider_mode == "foundry" and not state.errors and state.claims
+    assert any("continuing with every fact" in t.summary for t in state.trace)
+    assert any(c.fact_ids and c.fact_ids[0].startswith("sim_verdict") for c in state.claims)

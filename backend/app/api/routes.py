@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Query, Request
 
 from app.data.loader import ScenarioRegistry
@@ -187,13 +189,18 @@ def get_investigation(investigation_id: str, request: Request) -> InvestigationS
 
 
 @router.get("/investigations/{investigation_id}/export", response_model=ExportBundle)
-def export_investigation(investigation_id: str, request: Request) -> ExportBundle:
-    """Recap plan and timed overlay cues (JSON) built from the investigation's approved claims."""
+def export_investigation(investigation_id: str, request: Request, audience: Literal["casual", "analyst"] | None = None) -> ExportBundle:
+    """Recap plan and timed overlay cues (JSON) built from the investigation's approved claims, for either audience."""
     state = request.app.state.investigations.get(investigation_id)
     if state is None:
         raise ApiError(404, "investigation_not_found", "No such investigation (it may have expired).")
     if state.status != "complete":
         raise ApiError(409, "investigation_not_complete", "The investigation has not finished yet.")
+    if audience and audience != state.audience:
+        claims = state.casual_claims if audience == "casual" else state.claims
+        if audience == "analyst" and state.audience == "casual":
+            raise ApiError(409, "audience_unavailable", "This investigation was run for the fan view only.")
+        state = state.model_copy(update={"audience": audience, "claims": claims})
     try:
         return build_export(state, _bundle(request, state.scenario_id))
     except CueError as exc:

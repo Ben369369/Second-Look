@@ -4,7 +4,7 @@ import { FactList } from "../components/FactList";
 import { PitchCard } from "../components/PitchCard";
 import { useStudio } from "../features/studio";
 
-export function InvestigateView({ seed }: { seed?: string }) {
+export function InvestigateView() {
   const { answer, packet } = useStudio();
   return (
     <Grid>
@@ -12,7 +12,7 @@ export function InvestigateView({ seed }: { seed?: string }) {
         <PitchCard />
       </Grid.Col>
       <Grid.Col span={{ base: 12, lg: 5 }}>
-        <AskCard seed={seed} />
+        <AskCard />
       </Grid.Col>
       <Grid.Col span={12}>
         <Card>

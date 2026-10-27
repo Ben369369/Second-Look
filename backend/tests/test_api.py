@@ -75,3 +75,24 @@ def test_compare_endpoint_and_limits(client):
     bad = client.post("/api/scenarios/rb_press_hero/compare", json={"presser_id": "HAR-11", "rollouts": 64})
     assert bad.status_code == 422 and bad.json()["code"] == "invalid_branch"
     assert client.post("/api/scenarios/rb_press_hero/compare", json={"cover_delay_s": 9}).status_code == 422
+
+
+def test_one_investigation_carries_both_audiences(client):
+    import time
+
+    r = client.post("/api/investigations", params={"scenario_id": "rb_press_hero"}, json={"question": "Should the right-back have pressed earlier?"})
+    assert r.status_code in (200, 202), r.text
+    inv = r.json()
+    for _ in range(100):
+        if inv["status"] == "complete":
+            break
+        time.sleep(0.1)
+        inv = client.get(f"/api/investigations/{inv['investigation_id']}").json()
+    assert inv["status"] == "complete" and inv["audience"] == "analyst"
+    # The fan view is rendered from the same facts in the same run, so switching never re-runs the question.
+    fact_ids = {f["fact_id"] for f in inv["facts"]}
+    assert inv["casual_claims"] and all(set(c["fact_ids"]) <= fact_ids for c in inv["casual_claims"])
+    assert inv["casual_claims"][0]["text"].startswith("In the simulation")
+    for audience in ("analyst", "casual"):
+        exp = client.get(f"/api/investigations/{inv['investigation_id']}/export", params={"audience": audience})
+        assert exp.status_code == 200 and exp.json()["audience"] == audience

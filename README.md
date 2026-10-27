@@ -4,17 +4,23 @@
 
 Football arguments ("should the right-back have pressed earlier?") usually hide their assumptions. Second Look makes one inspectable. You watch the moment, see the measured evidence, compare what *might* have happened under alternative choices in a transparent simulator, and see which assumptions change the answer.
 
-**Live demo:** https://second-look-dusky.vercel.app. It runs in **offline mode**: no language model is connected, and the app says so on screen. All data is **synthetic**. Cedar FC, Harbor FC and their players are fictional, and nothing is recorded from a real match.
+In this move, pressing earlier lets the opponent into a dangerous position in **71 of 200** simulated replays, against **30** when the right-back holds. Pressing with a covering teammate (37) is too close to call against holding, until the cover arrives at 1.2 s instead of 0.6 s, when holding becomes the clear call.
+
+![The press: the question, the finding, and the measured gap on the pitch](docs/images/the-press.png)
+
+![Three choices: the predeclared rule's verdict and the three simulated counts](docs/images/three-choices.png)
+
+**Live demo:** https://second-look-dusky.vercel.app. The hosted site runs the same tools and validator without a language model (offline mode, labelled on screen), so it never depends on a model being up. The live agents run on-device with Foundry Local; see Status. All data is **synthetic**. Cedar FC, Harbor FC and their players are fictional, and nothing is recorded from a real match.
 
 ## What it does
 
 - **Replay.** A seeded 22-second synthetic sequence with all 22 players at 10 Hz, on a 2D pitch with play/pause/scrub/speed, a match clock, and clickable events.
-- **Ask & evidence.** Ask a question (8 supported types) and get claims that cite **typed facts**: observed measurements, labelled estimates, or simulation results. Every number is computed and rendered by code. Clicking a fact seeks the replay and draws the measurement on the pitch.
-- **What if?** From the pass that triggered the press, a rule-based simulator replays the next 8 seconds 200 times for each choice (hold, press earlier, press with cover), with defenders and attackers reacting to each other.
+- **The argument (ask & evidence).** Ask a question (8 supported types) and get claims that cite **typed facts**: observed measurements, labelled estimates, or simulation results. Every number is computed and rendered by code. Clicking a fact seeks the replay and draws the measurement on the pitch.
+- **Three choices (what if?).** From the pass that triggered the press, a rule-based simulator replays the next 8 seconds 200 times for each choice (hold, press earlier, press with cover), with defenders and attackers reacting to each other.
   - Results are counts with 95% intervals.
   - A recommendation rule fixed before any run decides whether one choice is clearly best, or reports "no clear winner".
   - Sliders change the cover timing and attacker style. A **stress test** searches a fixed assumption grid for settings that flip the answer.
-- **Agents (Microsoft Agent Framework).** Planner, evidence analyst, challenger and producer agents call the same tools. A deterministic validator rejects any claim whose numbers, players or evidence class don't match its cited facts, with one repair round, then a labelled fallback. Every answer has a "How this answer was made" trace.
+- **Agents (Microsoft Agent Framework).** Planner, evidence analyst, challenger and producer agents call the same tools. Agents choose which facts to show; code writes every factual sentence. The only free text the model writes is short interpretations, which may not contain numbers, certainty or causal wording, invented events, or comparisons between choices, and are rejected otherwise. One repair round, then a labelled fallback. Unknown players and what-ifs the simulator does not model are refused. Every answer has a "How this answer was made" trace.
 - **Fan and analyst views** of the same facts, plus a **recap with a timed overlay export** (JSON) and a preview that plays the cues over the replay.
 
 What it is **not**: a real-match tracking system, a judge of real players, or a calibrated predictor. The simulator is hand-set and not validated against real football (see [docs/MODEL_CARD.md](docs/MODEL_CARD.md)).
@@ -27,7 +33,7 @@ What it is **not**: a real-match tracking system, a judge of real players, or a 
 | Agent Framework workflow (4 agents, validator, retries, fallback) | Built and tested through the real framework loop with scripted model replies |
 | Live model, on-device (Foundry Local) | **Connected and verified locally.** The four agents run on `qwen3-8b` through Microsoft Foundry Local on the developer's laptop. Live test: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU. Also verified end to end in the UI. |
 | Live model, cloud (Microsoft Foundry) | **Not connected.** A Foundry resource and project exist, but every model deployment on the available Azure for Students subscription was blocked by Azure error 715-123420. The public Vercel demo therefore runs in labelled offline mode. |
-| Evaluation | 12 held-out variants: predeclared behaviour met 12/12; 0 of 156 shown claims fail re-validation; 60/60 injected fabrications rejected ([docs/EVALUATION.md](docs/EVALUATION.md)) |
+| Evaluation | 12 held-out variants: predeclared behaviour met 12/12; 139/139 injected fabrications rejected across 14 kinds; 36/36 off-catalogue questions refused ([docs/EVALUATION.md](docs/EVALUATION.md)) |
 
 ## Run it locally
 
@@ -94,7 +100,7 @@ One live-model test is reported as **skipped** unless `SECOND_LOOK_LIVE_TESTS=1`
 ```text
 backend/    FastAPI app: data (generator, loader, validator), metrics + facts, simulation, investigations, agents, exports
             fixtures/development (served) and fixtures/evaluation (held out, never served)
-frontend/   React app: canvas pitch with telestration, What-if, Ask & evidence, Recap & overlay, Players, Events, Methods
+frontend/   React app: canvas pitch with telestration, The press, The argument, Three choices, On air (recap and overlay), plus Players, Events, Methods
 scripts/    generate_fixtures.py, evaluate.py
 docs/       Architecture, data card, model card, evaluation, demo script, build status
 ```

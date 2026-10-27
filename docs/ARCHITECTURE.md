@@ -29,17 +29,21 @@ There are four `agent_framework.Agent` instances, each with distinct instruction
 
 | Role | Tools | Output (typed handoff) | Distinct contribution |
 |---|---|---|---|
-| Planner | `list_supported_questions` | `PlanOut`: intent, player/team ids, whether a counterfactual is needed, clarification | Maps free text to one supported intent, or refuses with the supported list |
+| Planner | none (catalogue and roster in its prompt) | `PlanOut`: intent, player/team ids, whether a counterfactual is needed, clarification | Maps free text to one supported intent, or refuses with the supported list |
 | Evidence analyst | `compute_metrics`, `get_events` | `EvidenceOut`: supporting / contradicting fact ids, missing data | Retrieves cutoff-bounded facts. Cited ids that no tool returned are ignored and logged |
 | Challenger | `evaluate_interventions`, `search_reversal` | `ChallengeOut`: whether the finding survived, concerns (no numbers) | Runs the simulator and searches a fixed assumption grid for settings that change the finding |
-| Producer | none | `ProducerOut`: claim objects `{claim_type, text, fact_ids}` | Writes the audience-appropriate answer, and only from approved facts |
+| Producer | none | `ProducerOut`: ordered `fact_ids` to show, plus at most 2 `interpretations` `{text, fact_ids}` | Chooses and orders the evidence for the audience and question, and says what it means; code renders every factual sentence |
 
 **Validator (code, not a model).** Every claim is checked by `validate_claim`:
 - cited ids must exist;
-- every number in the text must appear in a cited fact;
-- every named player must be a subject of a cited fact;
+- factual claims (observed / estimated / simulated) must consist only of the code-rendered `statement` or `plain` sentences of the facts they cite, so the model never words a quantity, unit, relation or comparison; paired comparisons and the decision rule's verdict are facts themselves (`sim_compare`, `sim_verdict`);
 - claim type must match the cited evidence classes, and simulated claims must say they are simulated;
-- interpretations may not contain numbers.
+- interpretations must cite facts and may not contain numbers or quantity words, certainty words, causal wording, events the data does not record, hand-written comparisons between choices, or counterfactuals that are not tied to cited simulated facts and labelled as simulation;
+- every named player must be a subject of a cited fact.
+
+These checks limit what an interpretation can assert; they do not prove it true. Interpretations are shown labelled as interpretation.
+
+**Router guard.** Before any model call, the deterministic router refuses questions naming a player who is not in the sequence and "should have" questions about anything other than the right-back's press (for example an attacker's run), showing the passing evidence at that moment instead.
 
 Rejected claims go back to the producer once with the errors (one repair round). If nothing passes, code-rendered fact statements are shown, labelled in the trace. Rejected claims are listed in the UI trace, never in the answer.
 

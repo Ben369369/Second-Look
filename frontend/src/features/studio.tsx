@@ -113,17 +113,12 @@ export function StudioProvider(props: { bundle: ReplayBundle; scenarioId: string
     [scenarioId, cutoffMode],
   );
 
-  // Switching audience re-asks the same question: same facts, different presentation.
-  const answerRef = useRef<InvestigationState | null>(null);
-  answerRef.current = answer;
-  const setAudience = useCallback(
-    (a: Audience) => {
-      audienceRef.current = a;
-      setAudienceState(a);
-      if (answerRef.current) ask(answerRef.current.question);
-    },
-    [ask],
-  );
+  // Switching audience changes only the presentation: each investigation carries both views of the same facts,
+  // so nothing is re-run and the data cutoff cannot move.
+  const setAudience = useCallback((a: Audience) => {
+    audienceRef.current = a;
+    setAudienceState(a);
+  }, []);
 
   const selectFact = useCallback((f: Fact) => {
     rawRef.current.pause();

@@ -1,5 +1,5 @@
 import { Accordion, Alert, Badge, Button, Card, Group, Loader, SegmentedControl, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
-import { IconInfoCircle, IconSearch } from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import type { ClaimType, InvestigationState, TraceStep } from "../api/types";
 import { type Audience, type CutoffMode, useStudio } from "../features/studio";
@@ -24,6 +24,9 @@ export function AskCard({ seed, showSuggestions = true }: { seed?: string; showS
   const submit = (q: string) => q.trim() && ask(q.trim());
   const factIndex = new Map(a?.facts.map((f, i) => [f.fact_id, i]) ?? []);
   const stale = a !== null && cutoffMode === "replay" && playback.t + 0.05 < a.cursor_s;
+  const casual = audience === "casual";
+  // Both views come from the same investigation; switching never re-runs it.
+  const shown = a ? (casual && a.casual_claims?.length ? a.casual_claims : a.claims) : [];
 
   return (
     <Card>
@@ -103,25 +106,23 @@ export function AskCard({ seed, showSuggestions = true }: { seed?: string; showS
       )}
       {a && (
         <Stack gap="xs" mt="md" className="answer" aria-live="polite" data-testid="answer">
-          <Group gap={6}>
+          <Group gap={8} wrap="wrap">
             {a.outcome ? (
-              <Badge color={STATUS[a.outcome].color} variant="light" radius="sm">
+              <Text fz="sm" fw={600} c={STATUS[a.outcome].color === "teal" ? "navy.9" : `${STATUS[a.outcome].color}.8`}>
                 {STATUS[a.outcome].label}
-              </Badge>
+              </Text>
             ) : (
-              <Badge color="navy" variant="light" radius="sm" leftSection={<Loader size={10} />}>
-                {a.status}…
-              </Badge>
+              <Group gap={6}>
+                <Loader size={12} />
+                <Text fz="sm" fw={600} c="navy.9">
+                  {a.status}…
+                </Text>
+              </Group>
             )}
-            {a.intent_label && (
-              <Badge color="gray" variant="outline" radius="sm">
-                {a.intent_label}
-              </Badge>
-            )}
+            <Text fz="sm" c="dimmed" className="tabular">
+              {[a.intent_label, `data to ${formatClock(offset + a.cursor_s)}`].filter(Boolean).join(" · ")}
+            </Text>
             <ProviderBadge a={a} />
-            <Badge color="gray" variant="outline" radius="sm" className="tabular">
-              Data to {formatClock(offset + a.cursor_s)}
-            </Badge>
           </Group>
           <Text fz="sm" c="dimmed" fs="italic">
             “{a.question}”
@@ -131,17 +132,17 @@ export function AskCard({ seed, showSuggestions = true }: { seed?: string; showS
               Computed with data up to {formatClock(offset + a.cursor_s)}, after the current replay position. Ask again to update.
             </Alert>
           )}
-          {a.claims.length > 0 && a.audience === "casual" && (
+          {shown.length > 0 && casual && (
             <Stack gap={8} className="casual" data-testid="casual-claims">
-              {a.claims
+              {shown
                 .filter((c) => c.claim_type !== "interpretation")
                 .map((s, i) => {
                   const f = s.fact_ids.map((id) => a.facts.find((x) => x.fact_id === id)).find(Boolean);
                   return (
                     <Text key={i} fz="md" lh={1.45}>
-                      <Badge size="xs" radius="sm" variant="light" color={CLAIM_COLOR[s.claim_type]} mr={6}>
+                      <span className="kicker" style={{ fontSize: 10.5, marginRight: 6, color: `var(--mantine-color-${CLAIM_COLOR[s.claim_type]}-8)` }}>
                         {PLAIN_KIND[s.claim_type]}
-                      </Badge>
+                      </span>
                       {s.text}{" "}
                       {f && (
                         <UnstyledButton className="ref" onClick={() => selectFact(f)}>
@@ -151,7 +152,7 @@ export function AskCard({ seed, showSuggestions = true }: { seed?: string; showS
                     </Text>
                   );
                 })}
-              {a.claims
+              {shown
                 .filter((c) => c.claim_type === "interpretation")
                 .map((s, i) => (
                   <Text key={`i${i}`} fz="sm" c="dimmed" fs="italic">
@@ -160,13 +161,13 @@ export function AskCard({ seed, showSuggestions = true }: { seed?: string; showS
                 ))}
             </Stack>
           )}
-          {a.claims.length > 0 && a.audience !== "casual" && (
+          {shown.length > 0 && !casual && (
             <ol className="sentences">
-              {a.claims.map((s, i) => (
+              {shown.map((s, i) => (
                 <li key={i} className={`claim claim-${s.claim_type}`}>
-                  <Badge size="xs" radius="sm" variant="light" color={CLAIM_COLOR[s.claim_type]} mr={6}>
+                  <span className="kicker" style={{ fontSize: 10.5, marginRight: 6, color: `var(--mantine-color-${CLAIM_COLOR[s.claim_type]}-8)` }}>
                     {s.claim_type.replace("_", " ")}
-                  </Badge>
+                  </span>
                   {s.text}{" "}
                   {s.fact_ids.map((id) => {
                     const idx = factIndex.get(id);
@@ -181,14 +182,17 @@ export function AskCard({ seed, showSuggestions = true }: { seed?: string; showS
             </ol>
           )}
           {a.notes.map((n) => (
-            <Alert key={n} color="navy" variant="light" p="xs" icon={<IconInfoCircle size={16} />}>
-              <Text fz="sm">{n}</Text>
-            </Alert>
+            <Text key={n} fz="sm" c="dimmed">
+              {n}
+            </Text>
           ))}
           {a.challenge_summary && (
-            <Alert color="orange" variant="light" p="xs" title="Challenger">
-              <Text fz="sm">{a.challenge_summary}</Text>
-            </Alert>
+            <Text fz="sm">
+              <Text span fw={600} c="navy.9">
+                Challenger:{" "}
+              </Text>
+              {a.challenge_summary}
+            </Text>
           )}
           <Trace a={a} />
         </Stack>
@@ -208,7 +212,7 @@ const PLAIN_KIND: Record<ClaimType, string> = {
 const CLAIM_COLOR: Record<ClaimType, string> = {
   observed: "navy",
   estimated: "grape",
-  simulated: "teal",
+  simulated: "cyan",
   interpretation: "gray",
   insufficient_data: "orange",
 };

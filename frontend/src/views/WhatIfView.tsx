@@ -1,15 +1,10 @@
 import {
   Accordion,
-  Alert,
-  Badge,
   Button,
   Card,
-  Grid,
   Group,
   List,
   Loader,
-  Paper,
-  Progress,
   SegmentedControl,
   SimpleGrid,
   Slider,
@@ -18,7 +13,6 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { IconAlertTriangle, IconFlask } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { AttackerPolicy, ChallengeCell, ChallengeResult, ComparisonResult, SimAction, TrackingFrame } from "../api/types";
@@ -106,197 +100,172 @@ export function WhatIfView() {
   const simState = simBundle ? stateAt(simBundle.frames, simPlayback.t) : null;
 
   return (
-    <Stack gap="md">
-      <Alert color="teal" variant="light" icon={<IconFlask size={18} />} title="Simulated alternatives">
-        <Text fz="sm">
-          {b ? (
-            <>
-              Starting from the recorded moment the pass to {playerLabel(lookup, b.carrier)} leaves the passer's foot (
-              {formatClock(offset + b.time_s)}), a rule-based model replays the next {horizon} s many times for each choice by{" "}
-              {playerLabel(lookup, b.presser)}. Results are counts inside this simulator, not real-world probabilities.
-            </>
-          ) : (
-            "Running the simulator…"
-          )}
-        </Text>
-      </Alert>
-
-      <Grid>
-        <Grid.Col span={{ base: 12, lg: 7 }}>
-          <Card>
-            <Group justify="space-between" mb="xs" wrap="wrap">
-              <Group gap="sm">
-                <Text fw={600}>Simulated replay</Text>
-                {sample && (
-                  <Badge variant="light" color={sample.outcome === "danger" ? "red" : sample.outcome === "regain" ? "teal" : "gray"} radius="sm">
-                    {sample.outcome === "danger" ? "ends in danger" : sample.outcome === "regain" ? "Cedar regain" : "no danger, no regain"}
-                  </Badge>
-                )}
-              </Group>
-              <SegmentedControl
-                size="xs"
-                value={view}
-                onChange={(v) => {
-                  setView(v as SimAction);
-                  simPlayback.reset();
-                }}
-                data={(Object.keys(ACTION_LABEL) as SimAction[]).map((a) => ({ value: a, label: ACTION_LABEL[a] }))}
-                aria-label="Which simulated choice to watch"
-                data-testid="sim-view"
-              />
-            </Group>
-            {simBundle ? (
-              <>
-                <PitchCanvas
-                  bundle={simBundle}
-                  lookup={lookup}
-                  t={simPlayback.t}
-                  highlight={highlight}
-                  annotation={null}
-                  showGrid={false}
-                  variant="simulated"
-                  ghost={ghost}
-                  label={`Simulated rollout ${sample?.rollout_index} for "${ACTION_LABEL[view]}", ${simPlayback.t.toFixed(1)} s after the branch. ${
-                    simState?.possession ? `${playerLabel(lookup, simState.possession)} on the ball.` : "Ball loose or travelling."
-                  } Dashed outlines show the recorded positions at the same moment.`}
-                />
-                <Group gap="lg" mt={6} fz="xs" c="dimmed">
-                  <Text fz="xs" c="dimmed">
-                    <span className="legend-solid" /> simulated players
+    <Stack gap="xl">
+      <section>
+        <Finding result={result} stale={stale || pending} error={error} />
+        <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="xl" mt="lg" className={stale || pending ? "is-stale" : undefined}>
+          {result?.actions.map((a) => {
+            const rec = result.recommendation;
+            const best = rec.status === "recommend" && rec.action === a.action;
+            return (
+              <div key={a.action} className={`choice${best ? " choice-mark" : ""}`} data-testid={`action-${a.action}`}>
+                <Group justify="space-between" align="baseline" wrap="nowrap">
+                  <Text fw={600} c="navy.9" fz="lg">
+                    {a.label}
                   </Text>
-                  <Text fz="xs" c="dimmed">
-                    <span className="legend-ghost" /> recorded positions, same moment
-                  </Text>
-                  <Text fz="xs" c="dimmed">
-                    Highlighted: {b ? [b.presser, b.carrier].map((id) => shortPlayer(lookup, id)).join(", ") : ""}
-                    {view === "press_with_cover" && b ? `, cover ${shortPlayer(lookup, b.cover)}` : ""}
+                  <Text className="kicker kicker-sim" fz={11}>
+                    simulated
                   </Text>
                 </Group>
-                <PlaybackControlsBare playback={simPlayback} duration={horizon} clockLabel={`+${simPlayback.t.toFixed(1)} s`} />
-              </>
-            ) : (
-              <Group justify="center" h={300}>
-                <Loader size="sm" />
+                <Text className="big-number" mt={6}>
+                  {a.danger.count} <span style={{ fontSize: "0.45em", fontWeight: 500 }}>of {a.danger.n}</span>
+                </Text>
+                <Text className="finding" fz={17} mt={2}>
+                  rollouts reach a dangerous position
+                </Text>
+                <Text fz="xs" c="dimmed" mt={6} className="tabular">
+                  {a.danger.count} of {a.danger.n} rollouts · {pct(a.danger.rate)} (95% {pct(a.danger.ci95[0])}–{pct(a.danger.ci95[1])}) · Cedar win it back in{" "}
+                  {a.regain.count}
+                  {a.median_regain_s !== null && `, median ${a.median_regain_s.toFixed(1)} s`}
+                </Text>
+                <button
+                  type="button"
+                  className="text-link"
+                  style={{ marginTop: 8 }}
+                  onClick={() => {
+                    setView(a.action);
+                    simPlayback.reset();
+                    simPlayback.play();
+                  }}
+                >
+                  Watch an example
+                </button>
+              </div>
+            );
+          })}
+        </SimpleGrid>
+      </section>
+
+      <Group gap="xl" align="flex-end" wrap="wrap" style={{ borderTop: "1px solid var(--sheet-rule)" }} pt="lg">
+        <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+          <Group gap="xs" mb={4}>
+            <Text fz="sm" fw={600}>
+              Cover delay: <span className="tabular">{coverDelay.toFixed(1)} s</span>
+            </Text>
+            {(pending || stale) && (
+              <Group gap={6} data-testid="sim-pending">
+                <Loader size={12} />
+                <Text fz="xs" c="dimmed">
+                  updating
+                </Text>
               </Group>
             )}
-          </Card>
-        </Grid.Col>
+          </Group>
+          <Text fz="xs" c="dimmed" mb="sm">
+            How long after the pass {b ? playerLabel(lookup, b.cover) : "the cover player"} starts moving to screen the inside lane.
+          </Text>
+          <Slider
+            value={coverDelay}
+            onChange={setCoverDelay}
+            min={0}
+            max={2}
+            step={0.1}
+            marks={[0, 0.5, 1, 1.5, 2].map((v) => ({ value: v, label: `${v}s` }))}
+            label={(v) => `${v.toFixed(1)} s`}
+            mb="lg"
+            aria-label="Cover delay in seconds"
+            data-testid="cover-delay"
+          />
+        </div>
+        <div style={{ flex: "0 1 360px" }}>
+          <Text fz="sm" fw={600} mb={6}>
+            Attackers
+          </Text>
+          <SegmentedControl
+            fullWidth
+            value={policy}
+            onChange={(v) => setPolicy(v as AttackerPolicy)}
+            data={[
+              { value: "patient", label: "Patient (keeps the ball)" },
+              { value: "direct", label: "Direct (takes risks)" },
+            ]}
+            aria-label="Attacker response policy"
+            data-testid="attacker-policy"
+          />
+        </div>
+      </Group>
 
-        <Grid.Col span={{ base: 12, lg: 5 }}>
-          <Stack gap="md">
-            <Card>
-              <Group justify="space-between" mb="sm">
-                <Text fw={600}>Assumptions</Text>
-                {(pending || stale) && (
-                  <Badge color="orange" variant="light" radius="sm" leftSection={<Loader size={10} color="orange" />} data-testid="sim-pending">
-                    updating
-                  </Badge>
-                )}
-              </Group>
-              <Text fz="sm" fw={500} mb={4}>
-                Cover delay: {coverDelay.toFixed(1)} s
+      <Card>
+        <Group justify="space-between" mb="xs" wrap="wrap">
+          <div>
+            <Text fw={600}>Watch one replay</Text>
+            <Text fz="xs" c="dimmed">
+              One example rollout with the most common outcome for that choice. Examples are illustrations, not the same trial replayed.
+            </Text>
+          </div>
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(v) => {
+              setView(v as SimAction);
+              simPlayback.reset();
+            }}
+            data={(Object.keys(ACTION_LABEL) as SimAction[]).map((a) => ({ value: a, label: ACTION_LABEL[a] }))}
+            aria-label="Which simulated choice to watch"
+            data-testid="sim-view"
+          />
+        </Group>
+        {simBundle ? (
+          <>
+            <PitchCanvas
+              bundle={simBundle}
+              lookup={lookup}
+              t={simPlayback.t}
+              highlight={highlight}
+              annotation={null}
+              showGrid={false}
+              variant="simulated"
+              ghost={ghost}
+              label={`Simulated rollout ${sample?.rollout_index} for "${ACTION_LABEL[view]}", ${simPlayback.t.toFixed(1)} s after the branch. ${
+                simState?.possession ? `${playerLabel(lookup, simState.possession)} on the ball.` : "Ball loose or travelling."
+              } Dashed outlines show the recorded positions at the same moment.`}
+            />
+            <Group gap="lg" mt={6}>
+              <Text fz="xs" c="dimmed">
+                <span className="legend-solid" /> simulated players
               </Text>
-              <Text fz="xs" c="dimmed" mb="sm">
-                How long after the branch {b ? playerLabel(lookup, b.cover) : "the cover player"} starts moving to screen the inside lane.
+              <Text fz="xs" c="dimmed">
+                <span className="legend-ghost" /> recorded positions, same moment
               </Text>
-              <Slider
-                value={coverDelay}
-                onChange={setCoverDelay}
-                min={0}
-                max={2}
-                step={0.1}
-                marks={[0, 0.5, 1, 1.5, 2].map((v) => ({ value: v, label: `${v}s` }))}
-                label={(v) => `${v.toFixed(1)} s`}
-                mb="xl"
-                aria-label="Cover delay in seconds"
-                data-testid="cover-delay"
-              />
-              <Text fz="sm" fw={500} mt="md" mb={4}>
-                Attacker response
+              {sample && (
+                <Text fz="xs" c="dimmed">
+                  This example {sample.outcome === "danger" ? "ends in danger" : sample.outcome === "regain" ? "ends with Cedar winning the ball" : "ends with neither"}
+                </Text>
+              )}
+              <Text fz="xs" c="dimmed">
+                Highlighted: {b ? [b.presser, b.carrier].map((id) => shortPlayer(lookup, id)).join(", ") : ""}
+                {view === "press_with_cover" && b ? `, cover ${shortPlayer(lookup, b.cover)}` : ""}
               </Text>
-              <SegmentedControl
-                fullWidth
-                value={policy}
-                onChange={(v) => setPolicy(v as AttackerPolicy)}
-                data={[
-                  { value: "patient", label: "Patient (keeps the ball)" },
-                  { value: "direct", label: "Direct (takes risks)" },
-                ]}
-                aria-label="Attacker response policy"
-                data-testid="attacker-policy"
-              />
-            </Card>
-
-            <RecommendationCard result={result} stale={stale || pending} error={error} />
-          </Stack>
-        </Grid.Col>
-      </Grid>
-
-      <SimpleGrid cols={{ base: 1, md: 3 }} className={stale || pending ? "is-stale" : undefined}>
-        {result?.actions.map((a) => {
-          const rec = result.recommendation;
-          const best = rec.status === "recommend" && rec.action === a.action;
-          return (
-            <Paper key={a.action} p="lg" className={`action-card${best ? " action-best" : ""}`} data-testid={`action-${a.action}`}>
-              <Group justify="space-between" mb="sm">
-                <Text fw={700} c="navy.9">
-                  {a.label}
-                </Text>
-                <Badge color="teal" variant="light" radius="sm">
-                  simulated
-                </Badge>
-              </Group>
-              <Text fz="xs" c="dimmed" tt="uppercase" fw={600}>
-                Harbor dangerous possession
-              </Text>
-              <Group gap={6} align="baseline">
-                <Text fz={28} fw={700} c="red.8" className="tabular">
-                  {pct(a.danger.rate)}
-                </Text>
-                <Text fz="sm" c="dimmed" className="tabular">
-                  {a.danger.count} of {a.danger.n} rollouts · 95% {pct(a.danger.ci95[0])}–{pct(a.danger.ci95[1])}
-                </Text>
-              </Group>
-              <Progress value={a.danger.rate * 100} color="red.7" size="sm" mb="sm" aria-hidden />
-              <Text fz="xs" c="dimmed" tt="uppercase" fw={600}>
-                Cedar win the ball back
-              </Text>
-              <Group gap={6} align="baseline">
-                <Text fz={22} fw={700} c="teal.8" className="tabular">
-                  {pct(a.regain.rate)}
-                </Text>
-                <Text fz="sm" c="dimmed" className="tabular">
-                  {a.regain.count} of {a.regain.n}
-                  {a.median_regain_s !== null && ` · median ${a.median_regain_s.toFixed(1)} s`}
-                </Text>
-              </Group>
-              <Progress value={a.regain.rate * 100} color="teal.7" size="sm" aria-hidden />
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                mt="sm"
-                onClick={() => {
-                  setView(a.action);
-                  simPlayback.reset();
-                  simPlayback.play();
-                }}
-              >
-                Watch a sample rollout
-              </Button>
-            </Paper>
-          );
-        })}
-      </SimpleGrid>
+            </Group>
+            <PlaybackControlsBare playback={simPlayback} duration={horizon} clockLabel={`+${simPlayback.t.toFixed(1)} s`} />
+          </>
+        ) : (
+          <Group justify="center" h={300}>
+            <Loader size="sm" />
+          </Group>
+        )}
+      </Card>
 
       <Card>
         <Group justify="space-between" wrap="wrap" mb="xs">
           <div>
-            <Text fw={600}>Stress test</Text>
+            <Text fw={600}>Try to flip it</Text>
             <Text fz="sm" c="dimmed">
-              The challenger re-runs the comparison across a fixed grid of assumptions and looks for settings where the answer changes.
+              The challenger re-runs the comparison across a fixed grid of cover delays and attacker styles and looks for settings where the
+              answer changes.
             </Text>
           </div>
-          <Button onClick={runStress} loading={stressPending} variant="light" leftSection={<IconAlertTriangle size={16} />} data-testid="run-stress">
+          <Button onClick={runStress} loading={stressPending} variant="default" data-testid="run-stress">
             Run stress test
           </Button>
         </Group>
@@ -304,10 +273,19 @@ export function WhatIfView() {
       </Card>
 
       {result && (
-        <Accordion variant="contained" radius="md">
-          <Accordion.Item value="assumptions">
-            <Accordion.Control>Model assumptions and run details</Accordion.Control>
+        <Accordion variant="default" chevronPosition="left">
+          <Accordion.Item value="assumptions" style={{ borderTop: "1px solid var(--sheet-rule)" }}>
+            <Accordion.Control>
+              <Text fw={600}>Model assumptions and run details</Text>
+            </Accordion.Control>
             <Accordion.Panel>
+              {b && (
+                <Text fz="sm" mb="sm">
+                  Starting from the recorded moment the pass to {playerLabel(lookup, b.carrier)} leaves the passer's foot ({formatClock(offset + b.time_s)}), a
+                  rule-based model replays the next {horizon} s {result.config.rollouts} times for each choice by {playerLabel(lookup, b.presser)}. Results are
+                  counts inside this simulator, not real-world probabilities.
+                </Text>
+              )}
               <List fz="sm" spacing={4} mb="sm">
                 {result.assumptions.map((x) => (
                   <List.Item key={x}>{x}</List.Item>
@@ -325,51 +303,47 @@ export function WhatIfView() {
   );
 }
 
-function RecommendationCard({ result, stale, error }: { result: ComparisonResult | null; stale: boolean; error: string | null }) {
+const VERB: Record<SimAction, string> = { hold: "Holding position", press_earlier: "Pressing earlier", press_with_cover: "Pressing with cover" };
+const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
+/** The predeclared rule's answer as sentences: what is clear, what is unresolved. */
+function Finding({ result, stale, error }: { result: ComparisonResult | null; stale: boolean; error: string | null }) {
   if (error) {
     return (
-      <Alert color="red" title="Simulation failed">
-        {error}
-      </Alert>
-    );
-  }
-  if (!result) {
-    return (
-      <Card>
-        <Loader size="sm" />
-      </Card>
-    );
-  }
-  const rec = result.recommendation;
-  return (
-    <Card className={stale ? "is-stale" : undefined} data-testid="recommendation">
-      <Group gap="xs" mb="xs">
-        <Text fw={600}>Finding</Text>
-        <Badge color={rec.status === "recommend" ? "navy" : "orange"} variant="light" radius="sm">
-          {rec.status === "recommend" ? "recommendation" : rec.status === "no_clear_winner" ? "no clear winner" : "inconclusive"}
-        </Badge>
-        {stale && (
-          <Badge color="gray" variant="outline" radius="sm">
-            for previous settings
-          </Badge>
-        )}
-      </Group>
-      <Title order={4} c="navy.9" mb="xs">
-        {rec.status === "recommend" && rec.action
-          ? `${ACTION_LABEL[rec.action]} leads to the least danger in this simulator.`
-          : rec.status === "no_clear_winner"
-            ? "No single choice is clearly best under these assumptions."
-            : "Not enough simulated evidence to decide."}
-      </Title>
-      <List fz="sm" spacing={4}>
-        {rec.reasons.map((r) => (
-          <List.Item key={r}>{r}</List.Item>
-        ))}
-      </List>
-      <Text fz="xs" c="dimmed" mt="sm">
-        Rule, fixed before running: {rec.rule}
+      <Text c="red.8" role="alert">
+        The simulation failed: {error}
       </Text>
-    </Card>
+    );
+  }
+  if (!result) return <Loader size="sm" />;
+  const rec = result.recommendation;
+  const pairs = result.diffs.filter((d) => d.metric === "danger");
+  const clear = pairs.filter((d) => d.diff >= 0.05 && d.ci95[0] > 0);
+  const open = pairs.filter((d) => !clear.includes(d));
+  const head =
+    rec.status === "recommend" && rec.action
+      ? `${VERB[rec.action]} is the clear call under these assumptions.`
+      : rec.status === "no_clear_winner"
+        ? "No single choice is clearly best under these assumptions."
+        : "Not enough simulated evidence to decide.";
+  const detail = [
+    ...(rec.status === "recommend" ? [] : clear.map((d) => `${VERB[d.better]} is clearly safer than ${lower(VERB[d.other])}.`)),
+    ...open.map((d) => `${VERB[d.better]} versus ${lower(VERB[d.other])} is too close to call.`),
+  ];
+  return (
+    <div className={stale ? "is-stale" : undefined} data-testid="recommendation">
+      <Title order={2} c="navy.9" className="page-title" fz={{ base: 24, sm: 28 }}>
+        {head}
+      </Title>
+      {detail.length > 0 && (
+        <Text className="finding" mt={6}>
+          {detail.join(" ")}
+        </Text>
+      )}
+      <Text fz="xs" c="dimmed" mt={6} maw={760}>
+        {stale ? "Showing the previous settings while the new ones run. " : ""}Rule, fixed before running: {rec.rule}
+      </Text>
+    </div>
   );
 }
 
@@ -380,9 +354,9 @@ function StressGrid({ stress, coverDelay, policy }: { stress: ChallengeResult; c
   const label = (c: ChallengeCell | undefined) => (!c ? "—" : c.status === "recommend" && c.action ? SHORT[c.action] : c.status === "no_clear_winner" ? "No clear winner" : "Inconclusive");
   return (
     <>
-      <Alert color={stress.changed.length ? "orange" : "teal"} variant="light" mb="sm" data-testid="stress-conclusion">
+      <Text className="finding" fz={18} mb="sm" data-testid="stress-conclusion">
         {stress.conclusion}
-      </Alert>
+      </Text>
       <Table.ScrollContainer minWidth={560}>
         <Table withTableBorder withColumnBorders ta="center" fz="sm">
           <Table.Thead>

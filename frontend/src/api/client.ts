@@ -71,8 +71,8 @@ export const api = {
     }),
   getInvestigation: (investigationId: string, signal?: AbortSignal) =>
     request<InvestigationState>(`/api/investigations/${encodeURIComponent(investigationId)}`, { signal }),
-  exportInvestigation: (investigationId: string, signal?: AbortSignal) =>
-    request<ExportBundle>(`/api/investigations/${encodeURIComponent(investigationId)}/export`, { signal }),
+  exportInvestigation: (investigationId: string, audience: "casual" | "analyst", signal?: AbortSignal) =>
+    request<ExportBundle>(`/api/investigations/${encodeURIComponent(investigationId)}/export?audience=${audience}`, { signal }),
   ask: (id: string, question: string, cursorS: number | null, signal?: AbortSignal) =>
     request<AskResponse>(`/api/scenarios/${sid(id)}/ask`, {
       method: "POST",

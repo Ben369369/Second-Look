@@ -30,7 +30,7 @@ export function MethodsView() {
             {[
               ["observed", "navy", "Computed directly from the synthetic recording."],
               ["estimated", "grape", "Output of a stated rule of thumb. Not a measurement, not a probability."],
-              ["simulated", "teal", "Results of alternative rollouts (coming in the next stage)."],
+              ["simulated", "teal", "Results of alternative rollouts from the simulator, starting at the pass that triggered the press. Always labelled SIMULATED."],
             ].map(([k, c, d]) => (
               <Grid.Col key={k} span={{ base: 12, sm: 4 }}>
                 <Badge color={c} variant="light" radius="sm" mb={4}>

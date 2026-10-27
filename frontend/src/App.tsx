@@ -1,7 +1,5 @@
-import { AppShell, Badge, Burger, Group, Loader, NavLink, Paper, ScrollArea, Select, Stack, Text, TextInput, Title, Tooltip } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { IconArrowsShuffle, IconBallFootball, IconDatabase, IconMovie, IconLayoutDashboard, IconListDetails, IconMessageQuestion, IconSearch, IconUsers } from "@tabler/icons-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { Container, Group, Loader, Select, Stack, Text, Title } from "@mantine/core";
+import { useEffect, useState } from "react";
 import { api, ApiError } from "./api/client";
 import type { Capabilities, QuestionOption, ReplayBundle, ScenarioSummary } from "./api/types";
 import { BrandLogo } from "./components/BrandLogo";
@@ -16,34 +14,33 @@ import { WhatIfView } from "./views/WhatIfView";
 
 type View = "overview" | "investigate" | "whatif" | "recap" | "players" | "events" | "methods";
 
-const NAV: { section: string; items: { view: View; label: string; icon: ReactNode }[] }[] = [
-  {
-    section: "Investigate",
-    items: [
-      { view: "overview", label: "Overview", icon: <IconLayoutDashboard size={18} /> },
-      { view: "investigate", label: "Ask & evidence", icon: <IconMessageQuestion size={18} /> },
-      { view: "whatif", label: "What if?", icon: <IconArrowsShuffle size={18} /> },
-      { view: "recap", label: "Recap & overlay", icon: <IconMovie size={18} /> },
-    ],
-  },
-  {
-    section: "Data",
-    items: [
-      { view: "players", label: "Players", icon: <IconUsers size={18} /> },
-      { view: "events", label: "Events", icon: <IconListDetails size={18} /> },
-    ],
-  },
-  { section: "About", items: [{ view: "methods", label: "Methods & data", icon: <IconDatabase size={18} /> }] },
+// The demo path, in the order a viewer walks it. Data pages are text links, not equal tabs.
+const MAIN: { view: View; label: string }[] = [
+  { view: "overview", label: "The press" },
+  { view: "investigate", label: "The argument" },
+  { view: "whatif", label: "Three choices" },
+  { view: "recap", label: "On air" },
+];
+const DATA: { view: View; label: string }[] = [
+  { view: "players", label: "Players" },
+  { view: "events", label: "Events" },
+  { view: "methods", label: "Methods & data" },
 ];
 
 const TITLES: Record<View, string> = {
-  overview: "Sequence overview",
-  investigate: "Ask & evidence",
-  whatif: "What if the right-back had pressed earlier?",
-  recap: "Recap & overlay",
+  overview: "The press",
+  investigate: "The argument",
+  whatif: "Three choices",
+  recap: "On air",
   players: "Players",
   events: "Events",
   methods: "Methods & data",
+};
+
+const SUBTITLES: Partial<Record<View, string>> = {
+  investigate: "Ask a question about this move. Every number comes from code; the agents only choose and explain.",
+  whatif: "Counts from this simulator, not a prediction.",
+  recap: "The answer as timed broadcast cards. Every card cites a fact; simulations stay labelled.",
 };
 
 const VIEWS = Object.keys(TITLES) as View[];
@@ -112,11 +109,8 @@ export function App() {
 }
 
 function Shell(props: { caps: Capabilities; scenarios: ScenarioSummary[]; scenarioId: string; onScenario: (id: string) => void }) {
-  const { bundle, ask } = useStudio();
-  const [opened, { toggle, close }] = useDisclosure();
+  const { bundle } = useStudio();
   const [view, setView] = useState<View>(viewFromHash);
-  const [search, setSearch] = useState("");
-  const [seed, setSeed] = useState<string | undefined>();
 
   useEffect(() => {
     const onHash = () => setView(viewFromHash());
@@ -126,136 +120,94 @@ function Shell(props: { caps: Capabilities; scenarios: ScenarioSummary[]; scenar
   const go = (v: View) => {
     window.location.hash = `/${v}`;
     setView(v);
-    close();
+    window.scrollTo({ top: 0 });
   };
 
   return (
-    <AppShell layout="alt" header={{ height: 64 }} navbar={{ width: 250, breakpoint: "sm", collapsed: { mobile: !opened } }} padding="md">
-      <AppShell.Header>
-        <Group h="100%" px="md" gap="md" wrap="nowrap">
-          <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" aria-label="Toggle navigation" />
-          <Group gap="xs" hiddenFrom="sm" wrap="nowrap">
-            <BrandLogo size={30} />
-          </Group>
-          <form
-            className="header-search"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const q = search.trim();
-              if (!q) return;
-              setSeed(q);
-              ask(q);
-              setSearch("");
-              go("investigate");
-            }}
-          >
-            <TextInput
-              value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
-              placeholder="Ask about this sequence…"
-              aria-label="Ask about this sequence"
-              leftSection={<IconSearch size={16} />}
-              maxLength={300}
-              data-testid="header-search"
-            />
-          </form>
-          <Group gap="xs" ml="auto" wrap="nowrap" visibleFrom="md">
-            <Tooltip label="All data is generated by a simulator. Teams and players are fictional." multiline w={240}>
-              <Badge color="orange" variant="light" radius="sm" size="lg" tt="none" data-testid="synthetic-badge">
+    <>
+      <header className="topbar">
+        <Container size="xl" py="sm">
+          <Group justify="space-between" wrap="wrap" gap="sm">
+            <Group gap="lg" wrap="wrap" style={{ minWidth: 0, rowGap: 4 }}>
+              <Group gap="xs" wrap="nowrap">
+                <BrandLogo size={34} />
+                <Text fw={700} c="navy.9" fz="lg" className="serif" style={{ whiteSpace: "nowrap" }}>
+                  Second Look
+                </Text>
+              </Group>
+              <nav className="topnav" aria-label="Main">
+                {MAIN.map((it) => (
+                  <button key={it.view} type="button" aria-current={view === it.view ? "page" : undefined} onClick={() => go(it.view)} data-testid={`nav-${it.view}`}>
+                    {it.label}
+                  </button>
+                ))}
+              </nav>
+            </Group>
+            <Group gap={6} wrap="wrap" fz="xs">
+              <Text fz="xs" fw={600} c="orange.9" data-testid="synthetic-badge" title="All data is generated by a simulator. Teams and players are fictional.">
                 Synthetic match
-              </Badge>
-            </Tooltip>
-            <Badge color="gray" variant="light" radius="sm" size="lg" tt="none" fw={500} data-testid="provider-status">
-              {props.caps.provider_label}
-            </Badge>
-          </Group>
-        </Group>
-      </AppShell.Header>
-
-      <AppShell.Navbar p="md">
-        <Group gap="sm" mb="lg" wrap="nowrap">
-          <BrandLogo size={44} />
-          <div>
-            <Text fw={700} c="navy.9" lh={1.2}>
-              Second Look
-            </Text>
-            <Text fz="xs" c="dimmed">
-              by Chui Labs
-            </Text>
-          </div>
-        </Group>
-        <ScrollArea style={{ flex: 1 }}>
-          {NAV.map((s) => (
-            <div key={s.section}>
-              <Text fz="xs" fw={700} c="dimmed" tt="uppercase" lts={0.6} mt="md" mb={6} px={12}>
-                {s.section}
               </Text>
-              {s.items.map((it) => (
-                <NavLink
-                  key={it.view}
-                  label={it.label}
-                  leftSection={it.icon}
-                  active={view === it.view}
-                  variant="filled"
-                  onClick={() => go(it.view)}
-                  className="nav-link"
-                  data-testid={`nav-${it.view}`}
-                />
-              ))}
-            </div>
-          ))}
-        </ScrollArea>
-        <Paper p="sm" bg="navy.0" withBorder={false} mt="md">
-          <Group gap={8} wrap="nowrap" align="flex-start">
-            <IconBallFootball size={18} color="var(--mantine-color-navy-9)" style={{ flex: "none", marginTop: 2 }} />
-            <Text fz="xs" c="navy.9">
-              Synthetic data only. Cedar FC and Harbor FC are fictional.
-            </Text>
+              <Text fz="xs" c="dimmed">
+                ·
+              </Text>
+              <Text fz="xs" c="dimmed" data-testid="provider-status">
+                {props.caps.provider_label}
+              </Text>
+            </Group>
           </Group>
-        </Paper>
-      </AppShell.Navbar>
+        </Container>
+      </header>
 
-      <AppShell.Main>
-        <Paper p="lg" mb="md">
-          <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm">
+      <Container size="xl" py="lg" component="main">
+        {view !== "overview" && (
+          <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" mb="lg">
             <div>
-              <Title order={2} c="navy.9">
+              <Title order={1} c="navy.9" className="page-title">
                 {TITLES[view]}
               </Title>
-              <Text c="dimmed" fz="sm" mt={4}>
-                {bundle.manifest.description}
-              </Text>
+              {SUBTITLES[view] && (
+                <Text c="dimmed" fz="sm" mt={6}>
+                  {SUBTITLES[view]}
+                </Text>
+              )}
             </div>
-            <Select
-              value={props.scenarioId}
-              onChange={(v) => v && props.onScenario(v)}
-              data={props.scenarios.map((s) => ({ value: s.scenario_id, label: s.title }))}
-              allowDeselect={false}
-              aria-label="Sequence"
-              w={280}
-              data-testid="scenario-select"
-            />
+            {props.scenarios.length > 1 && (
+              <Select
+                value={props.scenarioId}
+                onChange={(v) => v && props.onScenario(v)}
+                data={props.scenarios.map((s) => ({ value: s.scenario_id, label: s.title }))}
+                allowDeselect={false}
+                aria-label="Sequence"
+                w={280}
+                data-testid="scenario-select"
+              />
+            )}
           </Group>
-          <Group gap="xs" mt="sm" hiddenFrom="md">
-            <Badge color="orange" variant="light" radius="sm" tt="none">
-              Synthetic match
-            </Badge>
-            <Badge color="gray" variant="light" radius="sm" tt="none" fw={500} h="auto" py={3} style={{ whiteSpace: "normal" }}>
-              {props.caps.provider_label}
-            </Badge>
-          </Group>
-        </Paper>
-        {view === "overview" && <OverviewView />}
-        {view === "investigate" && <InvestigateView seed={seed} />}
+        )}
+        {view === "overview" && <OverviewView go={go} />}
+        {view === "investigate" && <InvestigateView />}
         {view === "whatif" && <WhatIfView />}
         {view === "recap" && <RecapView />}
         {view === "players" && <PlayersView />}
         {view === "events" && <EventsView />}
         {view === "methods" && <MethodsView />}
-        <Text fz="xs" c="dimmed" ta="center" mt="xl">
-          Second Look · Chui Labs · {bundle.manifest.scenario_id} · seed {bundle.manifest.seed} · Space play · ←/→ frame · Home reset
-        </Text>
-      </AppShell.Main>
-    </AppShell>
+
+        <Group justify="space-between" wrap="wrap" gap="sm" mt={48} pt="md" style={{ borderTop: "1px solid var(--sheet-rule)" }}>
+          <Group gap="md" wrap="wrap">
+            <Text fz="xs" c="dimmed">
+              Data behind this move:
+            </Text>
+            {DATA.map((it) => (
+              <button key={it.view} type="button" className="text-link" onClick={() => go(it.view)} data-testid={`nav-${it.view}`}>
+                {it.label}
+              </button>
+            ))}
+          </Group>
+          <Text fz="xs" c="dimmed">
+            Second Look by Chui Labs · {bundle.manifest.description} · Synthetic data; Cedar FC and Harbor FC are fictional · Space play · ←/→ frame
+          </Text>
+        </Group>
+      </Container>
+    </>
   );
 }

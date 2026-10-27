@@ -10,8 +10,11 @@ test("fan view and analyst view answer from the same facts", async ({ page }) =>
   await page.getByTestId("audience").getByText("Fan view").click();
   await expect(page.getByTestId("casual-claims")).toContainText("In the simulation", { timeout: 30_000 });
   await expect(page.getByTestId("casual-claims")).toContainText("made-up match");
-  // Same evidence count behind both presentations.
+  // Same evidence count behind both presentations, and switching does not re-run the question.
   await expect(page.getByRole("tab", { name: /Evidence/ })).toHaveText(analystFacts ?? "");
+  await expect(page.getByTestId("ask")).not.toHaveAttribute("data-loading", "true");
+  await page.getByTestId("audience").getByText("Analyst view").click();
+  await expect(page.getByTestId("answer")).toContainText(/predeclared rule/);
 });
 
 test("recap overlay preview matches the exported cue timing", async ({ page }) => {

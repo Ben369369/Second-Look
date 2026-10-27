@@ -1,7 +1,6 @@
-import { Badge, Group, Paper, Text, UnstyledButton } from "@mantine/core";
+import { Group, Paper, Text, UnstyledButton } from "@mantine/core";
 import type { Fact } from "../api/types";
 import { useStudio } from "../features/studio";
-import { CLASS_COLOR } from "./FactList";
 
 interface Props {
   title: string;
@@ -23,15 +22,15 @@ export function StatCard({ title, fact, value, unit, caption }: Props) {
       aria-label={fact ? `${title}: ${fact.statement} Show on pitch.` : `${title}: not available`}
       data-testid={`stat-${fact?.metric ?? "missing"}`}
     >
-      <Paper p="lg" className={`stat-card${active ? " stat-active" : ""}`}>
+      <Paper py="md" className={`stat-card${active ? " stat-active" : ""}`}>
         <Group justify="space-between" align="flex-start" wrap="nowrap">
-          <Text fz="sm" fw={600} tt="uppercase" c="navy.9" lts={0.3}>
+          <Text fz="sm" fw={600} c="navy.9">
             {title}
           </Text>
           {fact && (
-            <Badge size="sm" radius="sm" color={CLASS_COLOR[fact.evidence_class]}>
+            <Text className={`kicker ${fact.evidence_class === "simulated" ? "kicker-sim" : "kicker-obs"}`} fz={11}>
               {fact.evidence_class}
-            </Badge>
+            </Text>
           )}
         </Group>
         <Group gap={6} align="baseline" mt="md">

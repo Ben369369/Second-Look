@@ -111,7 +111,7 @@ function drawGhosts(ctx: CanvasRenderingContext2D, state: RenderState, lookup: L
 
 function drawSimulatedFrame(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.save();
-  ctx.strokeStyle = "#0ca678";
+  ctx.strokeStyle = "#0b7285";
   ctx.lineWidth = 3;
   ctx.setLineDash([10, 6]);
   ctx.strokeRect(1.5, 1.5, w - 3, h - 3);
@@ -119,7 +119,7 @@ function drawSimulatedFrame(ctx: CanvasRenderingContext2D, w: number, h: number)
   ctx.font = "700 12px system-ui, sans-serif";
   const text = "SIMULATED · one sampled rollout";
   const tw = ctx.measureText(text).width + 14;
-  ctx.fillStyle = "#0ca678";
+  ctx.fillStyle = "#0b7285";
   ctx.fillRect(10, 10, tw, 22);
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "left";

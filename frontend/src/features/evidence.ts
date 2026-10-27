@@ -8,7 +8,9 @@ export const CLASS_CODE: Record<Fact["evidence_class"], string> = {
 };
 
 export function formatValue(f: Fact): string {
+  if (f.metric === "sim_verdict") return "Rule verdict";
   if (f.value === null) return "—";
+  if (f.metric === "sim_compare") return `+${f.value.toFixed(1)} pts`;
   if (f.metric === "lane_access") return `${f.value > 0 ? "+" : ""}${f.value.toFixed(2)} s`;
   if (f.metric === "sim_danger") return `${f.value.toFixed(0)}% danger`;
   const n = Number.isInteger(f.value) ? String(f.value) : f.value.toFixed(1);
@@ -29,6 +31,8 @@ export const METRIC_LABEL: Record<string, string> = {
   final_third_share: "Final-third events",
   transitions: "Possession changes",
   sim_danger: "Simulated danger",
+  sim_compare: "Simulated comparison",
+  sim_verdict: "Decision rule",
 };
 
 /** Telestration for a fact, drawn at the fact's focus moment. */

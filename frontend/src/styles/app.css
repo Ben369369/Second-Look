@@ -1,10 +1,135 @@
-/* Light dashboard: white surfaces on a cool grey page, Chui Labs navy accents. */
+/* A tactics sheet: white page, navy structure, orange only for drawn measurements.
+   Sections are separated by a hairline rule, not boxed; only the selected or winning item gets a navy top rule. */
+:root {
+  --sheet-rule: #e3e7ef;
+  --ink: #1b2a5e;
+}
+
 body {
-  background: #f5f7fb;
+  background: #ffffff;
+  color: #1f2638;
 }
 
 .mantine-AppShell-main {
-  background: #f5f7fb;
+  background: #ffffff;
+}
+
+.mantine-Card-root {
+  background: transparent;
+  border-top: 1px solid var(--sheet-rule);
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ---- shell ------------------------------------------------------------------ */
+
+.topbar {
+  border-bottom: 1px solid var(--sheet-rule);
+}
+
+.topnav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.topnav button {
+  flex: none;
+  padding: 6px 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: #4b5568;
+  cursor: pointer;
+}
+
+.topnav button:hover {
+  color: var(--ink);
+}
+
+.topnav button[aria-current="page"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.topnav button:focus-visible,
+.text-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.text-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: #4b5568;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  color: var(--ink);
+}
+
+.page-title {
+  font-size: clamp(26px, 3.2vw, 34px);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.serif {
+  font-family: "Newsreader", "Source Serif 4", Georgia, serif;
+}
+
+/* ---- the finding ------------------------------------------------------------- */
+
+.big-number {
+  font-size: clamp(40px, 5vw, 56px);
+  line-height: 1;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.finding {
+  font-family: "Newsreader", "Source Serif 4", Georgia, serif;
+  font-size: 21px;
+  line-height: 1.35;
+  color: #1f2638;
+  text-wrap: pretty;
+}
+
+.kicker {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kicker-sim {
+  color: #0b7285;
+}
+
+.kicker-obs {
+  color: var(--ink);
+}
+
+.choice {
+  padding-top: 14px;
+  border-top: 3px solid transparent;
+}
+
+.choice-mark {
+  border-top-color: var(--ink);
 }
 
 .sr-only {
@@ -52,18 +177,15 @@ body {
 
 .stat-card {
   height: 100%;
-  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  border-top: 3px solid var(--sheet-rule);
 }
 
 .stat-button:not(:disabled):hover .stat-card {
-  border-color: var(--mantine-color-navy-3);
-  box-shadow: 0 4px 14px rgba(27, 42, 94, 0.08);
-  transform: translateY(-1px);
+  border-top-color: var(--mantine-color-navy-3);
 }
 
 .stat-active {
-  border-color: var(--mantine-color-navy-8);
-  box-shadow: inset 0 3px 0 var(--mantine-color-navy-8);
+  border-top-color: var(--ink);
 }
 
 /* ---- pitch + transport --------------------------------------------------- */
@@ -237,8 +359,7 @@ tr[data-current="true"] td:first-child {
 }
 
 .action-best {
-  border-color: var(--mantine-color-navy-8);
-  box-shadow: inset 0 3px 0 var(--mantine-color-navy-8);
+  border-top-color: var(--ink);
 }
 
 .legend-solid,
@@ -267,24 +388,13 @@ tr[data-current="true"] td:first-child {
   font-weight: 600;
 }
 
-.stress-cell.rec-hold {
-  background: var(--mantine-color-navy-0);
-  color: var(--mantine-color-navy-9);
-}
-
-.stress-cell.rec-press_with_cover {
-  background: var(--mantine-color-teal-0);
-  color: var(--mantine-color-teal-9);
-}
-
-.stress-cell.rec-press_earlier {
-  background: var(--mantine-color-red-0);
-  color: var(--mantine-color-red-9);
+.stress-cell {
+  color: var(--ink);
 }
 
 .stress-cell.rec-none {
-  background: var(--mantine-color-orange-0);
-  color: var(--mantine-color-orange-9);
+  font-weight: 400;
+  color: #6b7385;
 }
 
 .stress-cell.stress-base {
@@ -325,7 +435,9 @@ tr[data-current="true"] td:first-child {
 }
 
 .overlay-tradeoff_card {
-  background: rgba(8, 102, 74, 0.95);
+  background: rgba(27, 42, 94, 0.94);
+  outline: 1px dashed rgba(255, 255, 255, 0.6);
+  outline-offset: -5px;
 }
 
 .recap-item {

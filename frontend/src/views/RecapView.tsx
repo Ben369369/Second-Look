@@ -12,7 +12,7 @@ const HERO = "Should the right-back have pressed earlier?";
 
 /** Recap plan and a live preview of the exported overlay cues over the recorded replay. */
 export function RecapView() {
-  const { bundle, lookup, playback, answer, ask, askPending, showGrid } = useStudio();
+  const { bundle, lookup, playback, answer, ask, askPending, showGrid, audience } = useStudio();
   const [exp, setExp] = useState<ExportBundle | null>(null);
   const [error, setError] = useState<string | null>(null);
   const offset = bundle.manifest.match_clock_offset_s;
@@ -23,11 +23,11 @@ export function RecapView() {
     if (!answer || answer.status !== "complete") return;
     const ctl = new AbortController();
     api
-      .exportInvestigation(answer.investigation_id, ctl.signal)
+      .exportInvestigation(answer.investigation_id, audience, ctl.signal)
       .then(setExp)
       .catch((err) => err.name !== "AbortError" && setError(err instanceof ApiError ? err.message : String(err)));
     return () => ctl.abort();
-  }, [answer]);
+  }, [answer, audience]);
 
   const t = playback.t;
   const active: OverlayCue | undefined = exp?.cues.find((c) => t >= c.start_s && t < c.start_s + c.duration_s);
@@ -121,7 +121,7 @@ export function RecapView() {
         <Card>
           <Text fw={600}>Recap</Text>
           <Text fz="sm" c="dimmed" mb="sm">
-            “{answer.question}” · {answer.audience === "casual" ? "fan view" : "analyst view"} · {answer.provider_label}
+            “{answer.question}” · {audience === "casual" ? "fan view" : "analyst view"} · {answer.provider_label}
           </Text>
           {error && <Alert color="red">{error}</Alert>}
           {!exp && !error && <Loader size="sm" />}

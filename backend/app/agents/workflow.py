@@ -25,14 +25,17 @@ from pydantic import BaseModel
 from app.agents.tools import InvestigationContext, build_tools
 from app.agents.validate import validate_claims
 from app.config import Settings
-from app.investigations.questions import CATALOGUE, LABELS, ask
+from app.investigations.questions import CATALOGUE, LABELS, ask, route
 from app.metrics.facts import sim_run_id
 from app.metrics.view import SequenceView
 from app.schemas import Claim, Fact, InvestigationState, RejectedClaim, TraceStep
 
 MAX_RETRIES = 2
 # On-device reply caps (tokens): JSON hand-offs are short; the producer writes several sentences.
-LOCAL_MAX_TOKENS = {"ProducerOut": 1600}
+LOCAL_MAX_TOKENS = {"ProducerOut": 900}
+MAX_FACT_CLAIMS = 6
+MIN_FACT_CLAIMS = 3
+MAX_INTERPRETATIONS = 2
 LOCAL_MAX_TOKENS_DEFAULT = 700
 PER_CALL_TIMEOUT_S = 30.0
 FUNCTION_LIMITS = {"max_iterations": 4, "max_function_calls": 6, "max_duration_seconds": 30}
@@ -64,8 +67,15 @@ class ChallengeOut(BaseModel):
     concerns: list[str]
 
 
+class InterpretationOut(BaseModel):
+    text: str
+    fact_ids: list[str]
+
+
 class ProducerOut(BaseModel):
-    claims: list[Claim]
+    # The producer selects facts (code renders their sentences) and writes only interpretations.
+    fact_ids: list[str]
+    interpretations: list[InterpretationOut]
 
 
 INTENTS = ", ".join(f"{q.intent} ({q.label}: e.g. '{q.example}')" for q in CATALOGUE)
@@ -76,6 +86,8 @@ If none fits, use intent "unsupported". The players in this sequence are listed 
 Fill player_ids/team_ids only with ids from that list. Ask for clarification (clarification field) only if the
 question is materially ambiguous (e.g. a shirt number that exists on both teams); otherwise set it to null.
 needs_simulation is true only for counterfactual questions (what would have happened if...).
+Questions about what a player or team should have done, other than the pressing decision (press earlier, hold, or
+press with cover), are "unsupported": the simulator does not model them.
 Keep rationale to one short sentence without numbers."""
 
 EVIDENCE = """You are the evidence analyst. Call compute_metrics for the planned intent (and players), and get_events if
@@ -87,19 +99,21 @@ Call evaluate_interventions (defaults are fine) and then search_reversal. Report
 reversal search found no setting that changes the finding; false if it did; null if the tools failed.
 Concerns: up to three short sentences, WITHOUT numbers, naming assumptions or missing data that could change the answer."""
 
-PRODUCER = """You are the producer. Write a concise answer as claim objects. Rules:
-- Each claim has claim_type: observed | estimated | simulated | interpretation | insufficient_data.
-- observed/estimated/simulated claims MUST cite fact_ids from the provided facts and may only use numbers that appear
-  in those facts' statements. Prefer short paraphrases of the statements; never invent or alter a number.
-- simulated claims must say they are simulation results and cite only simulated facts.
-- interpretation and insufficient_data claims must contain NO numbers.
-- Only name players who are subjects of the facts you cite.
-- {audience}
-Return 3 to 5 claims, each under 35 words."""
+PRODUCER = """You are the producer. Build the answer from the facts provided.
+- fact_ids: choose 3 to 5 fact ids, in the order a viewer should read them. Code shows each fact's own sentence, so
+  you never reword a fact. For a pressing question include the sim_compare and sim_verdict facts.
+- interpretations: at most 2 sentences, each under 30 words, saying what the chosen facts mean for the question, each
+  citing the fact ids it rests on. No numbers. Only name players who are subjects of the cited facts. No certainty
+  words (always, never, guaranteed), no causes (because, led to), no events such as goals, and no comparisons between
+  choices (the comparison facts already do that). If it is about the simulation, say "in the simulation".
+- An interpretation says what the evidence means or depends on (an assumption, the timing of the cover, missing data),
+  never which choice did better: the facts you select already say that.
+- Take the challenger's verdict into account: if the finding is not robust, one interpretation says what it depends on.
+- {audience}"""
 
 AUDIENCE = {
-    "casual": "Audience: a football fan. Plain language (prefer the facts' 'plain' sentences), one finding, one trade-off, one caveat.",
-    "analyst": "Audience: an analyst. Precise wording, keep denominators and evidence classes explicit.",
+    "casual": "Audience: a football fan. Choose the fewest facts that tell the story; plain words in interpretations.",
+    "analyst": "Audience: an analyst. Include the evidence that limits or qualifies the conclusion.",
 }
 
 
@@ -112,7 +126,7 @@ SHAPE_HINTS = {
     "PlanOut": '{"intent": "press_timing", "player_ids": ["CED-02"], "team_ids": [], "needs_simulation": true, "clarification": null, "rationale": "one short sentence"}',
     "EvidenceOut": '{"supporting_fact_ids": ["<fact_id>"], "contradicting_fact_ids": [], "missing_data": []}',
     "ChallengeOut": '{"finding_robust": false, "concerns": ["short sentence without numbers"]}',
-    "ProducerOut": '{"claims": [{"claim_type": "observed|estimated|simulated|interpretation|insufficient_data", "text": "...", "fact_ids": ["<fact_id>"]}]}',
+    "ProducerOut": '{"fact_ids": ["<fact_id>", "<fact_id>"], "interpretations": [{"text": "short sentence without numbers", "fact_ids": ["<fact_id>"]}]}',
 }
 
 
@@ -156,7 +170,8 @@ def _extract_json(text: str) -> str:
 
 
 CASUAL_CAVEAT = (
-    "This is a made-up match and a simplified model of football, so treat it as a way to explore the argument, not a verdict."
+    "This is a made-up match and the alternatives come from a simplified simulation of football, "
+    "so treat them as a way to explore the argument, not a verdict."
 )
 
 
@@ -172,17 +187,16 @@ def casual_claims(intent: str | None, facts: list[Fact]) -> list[Claim]:
         return Claim(claim_type=kind[f.evidence_class], text=f.plain or f.statement, fact_ids=[f.fact_id])  # type: ignore[arg-type]
 
     out: list[Claim] = []
-    sims = {f.fact_id.split(":")[1].split("@")[0]: f for f in by_metric.get("sim_danger", [])}
-    if intent == "press_timing" and {"hold", "press_earlier", "press_with_cover"} <= set(sims):
-        out.append(claim(sims["press_earlier"]))  # finding: what pressing earlier did
-        out.append(claim(sims["hold"]))  # comparison
-        out.append(claim(sims["press_with_cover"]))  # trade-off
-        if "response_time" in by_metric:
-            out.append(claim(by_metric["response_time"][0]))  # what actually happened
+    if intent == "press_timing" and by_metric.get("sim_verdict"):
+        out.append(claim(by_metric["sim_verdict"][0]))  # finding: what the rule supports and what it leaves open
+        out.extend(claim(f) for f in by_metric.get("sim_compare", []))  # the comparisons behind it
+        for metric in ("defender_distance", "response_time"):  # what actually happened
+            if metric in by_metric:
+                out.append(claim(by_metric[metric][0]))
     else:
         order = [f for f in facts if f.evidence_class != "simulated"][:3]
         out.extend(claim(f) for f in order)
-    out.append(Claim(claim_type="interpretation", text=CASUAL_CAVEAT, fact_ids=[]))
+    out.append(Claim(claim_type="interpretation", text=CASUAL_CAVEAT, fact_ids=[f for c in out for f in c.fact_ids]))
     return out
 
 
@@ -196,11 +210,18 @@ class Workflow:
         # Local models are slower; give each call a proportional share of the larger budget.
         self.per_call_timeout = max(PER_CALL_TIMEOUT_S, settings.investigation_timeout_seconds / 3)
         self.t_start = time.perf_counter()
+        self.chosen: list[str] = []
 
     # -- helpers ----------------------------------------------------------------
 
     def _trace(self, agent: str, kind: str, summary: str, duration_ms: int = 0, tool: str | None = None) -> None:
         self.ctx.trace.append(TraceStep(agent=agent, kind=kind, summary=summary, duration_ms=duration_ms, tool=tool))  # type: ignore[arg-type]
+
+    def _with_casual(self) -> None:
+        facts = list(self.ctx.facts.values())
+        if facts:
+            ok, _ = validate_claims(casual_claims(self.state.intent, facts), self.ctx.facts, self.ctx.view.players)
+            self.state.casual_claims = ok
 
     def _sync(self) -> None:
         s = self.state
@@ -289,6 +310,29 @@ class Workflow:
             [{"fact_id": f.fact_id, "class": f.evidence_class, "subjects": f.subject_ids, "statement": f.statement, "plain": f.plain} for f in facts]
         )
 
+    def _render(self, out: ProducerOut) -> list[Claim]:
+        """Turn the producer's selection into claims: fact sentences come from code, never from the model."""
+        kind = {"observed": "observed", "estimated": "estimated", "simulated": "simulated"}
+        picked = [i for i in dict.fromkeys(out.fact_ids) if i in self.ctx.facts][:MAX_FACT_CLAIMS]
+        if any(i not in self.ctx.facts for i in out.fact_ids):
+            self._trace("validator", "validation", "producer selected fact ids that no tool returned; ignored")
+        verdict = next((i for i, f in self.ctx.facts.items() if f.metric == "sim_verdict"), None)
+        if verdict and verdict not in picked:
+            picked.insert(0, verdict)
+            self._trace("producer", "rule", "the decision rule's verdict is always shown; added")
+        if len(picked) < MIN_FACT_CLAIMS:
+            extra = [i for i in self.chosen if i not in picked][: MIN_FACT_CLAIMS - len(picked)]
+            if extra:
+                picked += extra
+                self._trace("producer", "rule", f"added {len(extra)} of the evidence analyst's facts to reach the minimum of {MIN_FACT_CLAIMS}")
+        claims = []
+        for i in picked:
+            f = self.ctx.facts[i]
+            text = (f.plain or f.statement) if self.state.audience == "casual" else f.statement
+            claims.append(Claim(claim_type=kind[f.evidence_class], text=text, fact_ids=[i]))  # type: ignore[arg-type]
+        claims += [Claim(claim_type="interpretation", text=x.text, fact_ids=x.fact_ids) for x in out.interpretations[:MAX_INTERPRETATIONS]]
+        return claims
+
     def _template_claims(self, facts: list[Fact]) -> list[Claim]:
         kind = {"observed": "observed", "estimated": "estimated", "simulated": "simulated"}
         return [Claim(claim_type=kind[f.evidence_class], text=f.statement, fact_ids=[f.fact_id]) for f in facts]  # type: ignore[arg-type]
@@ -325,8 +369,9 @@ class Workflow:
         s.outcome = res.status
         s.notes = res.notes + ([f"Supported questions: {', '.join(q.example for q in CATALOGUE)}"] if res.status == "unsupported" else [])
         s.provider_mode = label_mode  # type: ignore[assignment]
-        s.provider_label = OFFLINE_LABEL if label_mode == "offline" else FALLBACK_LABEL
+        s.provider_label = {"offline": OFFLINE_LABEL, "fallback": FALLBACK_LABEL}.get(label_mode, s.provider_label)
         s.status = "complete"
+        self._with_casual()
         self._sync()
         return s
 
@@ -336,6 +381,12 @@ class Workflow:
         from agent_framework import Agent
 
         s, v = self.state, self.ctx.view
+        guard = route(v, s.question)
+        if guard.unknown_names or guard.other_decision:
+            # Deterministic guard: unknown players and unmodelled what-ifs are refused the same way in every mode,
+            # before a model can turn them into a confident answer to a different question.
+            self._trace("router", "rule", "outside what Second Look can answer (unknown player or unmodelled what-if); refused before any model call")
+            return self.run_offline(label_mode=s.provider_mode)
         try:
             client = self.client_factory()
             tools_for = lambda agent: build_tools(self.ctx, agent)  # noqa: E731
@@ -373,16 +424,24 @@ class Workflow:
             s.status = "evidence"
             ev_tools = tools_for("evidence analyst")
             analyst = Agent(client, EVIDENCE, name="evidence_analyst", tools=[ev_tools["compute_metrics"], ev_tools["get_events"]])
-            evidence: EvidenceOut = await self._call(
-                analyst, "evidence analyst",
-                f"Question: {s.question}\nPlan: {plan.model_dump_json()}\nCall compute_metrics with intent '{plan.intent}'.",
-                EvidenceOut,
-            )  # type: ignore[assignment]
+            try:
+                evidence: EvidenceOut = await self._call(
+                    analyst, "evidence analyst",
+                    f"Question: {s.question}\nPlan: {plan.model_dump_json()}\nCall compute_metrics with intent '{plan.intent}'.",
+                    EvidenceOut,
+                )  # type: ignore[assignment]
+            except ProviderError as exc:
+                if not self.ctx.facts or "malformed" not in str(exc):
+                    raise
+                # Its tool call succeeded; only the selection is unusable. Keep every fact the tool returned.
+                self._trace("evidence analyst", "error", "selection unusable after one repair; continuing with every fact its tool returned")
+                evidence = EvidenceOut(supporting_fact_ids=list(self.ctx.facts), contradicting_fact_ids=[], missing_data=[])
             if not self.ctx.facts:
                 # The model skipped its tool: compute deterministically rather than answer without evidence.
                 self._trace("evidence analyst", "error", "no tool call made; computing metrics directly")
                 ev_tools["compute_metrics"](intent=plan.intent, player_ids=plan.player_ids, team_ids=plan.team_ids)
             chosen = [i for i in evidence.supporting_fact_ids + evidence.contradicting_fact_ids if i in self.ctx.facts]
+            self.chosen = chosen or [i for i, f in self.ctx.facts.items() if f.evidence_class != "simulated"]
             if len(chosen) < len(evidence.supporting_fact_ids + evidence.contradicting_fact_ids):
                 self._trace("validator", "validation", "evidence analyst cited fact ids that no tool returned; ignored")
             s.notes.extend(m for m in evidence.missing_data if not any(ch.isdigit() for ch in m))
@@ -394,26 +453,38 @@ class Workflow:
                 ch_tools = tools_for("challenger")
                 challenger = Agent(client, CHALLENGER, name="challenger", tools=[ch_tools["evaluate_interventions"], ch_tools["search_reversal"]])
                 chal: ChallengeOut = await self._call(challenger, "challenger", f"Question: {s.question}", ChallengeOut)  # type: ignore[assignment]
-                s.notes.extend(c for c in chal.concerns[:3] if not any(ch.isdigit() for ch in c))
+                concerns = [c for c in chal.concerns[:3] if not any(ch.isdigit() for ch in c)]
+                s.notes.extend(concerns)
+                searched = None if self.ctx.reversal_changed is None else self.ctx.reversal_changed == 0
+                if searched is not None and chal.finding_robust is not None and chal.finding_robust != searched:
+                    self._trace("validator", "validation", f"challenger called the finding {'robust' if chal.finding_robust else 'not robust'}; its reversal search says otherwise, so the search result is used")
+                robust = {True: "robust", False: "not robust", None: "unknown"}[searched if searched is not None else chal.finding_robust]
+                challenge_note = f"finding {robust}; concerns: {'; '.join(concerns) or 'none'}"
+                self._trace("challenger", "rule", f"challenger verdict passed to the producer: {robust}")
                 self._sync()
+            else:
+                challenge_note = "not run (no simulation needed)"
 
             # 4. Producer + validation (one repair round)
             s.status = "producing"
             producer = Agent(client, PRODUCER.format(audience=AUDIENCE[s.audience]), name="producer")
             sim_ids = [i for i, f in self.ctx.facts.items() if f.evidence_class == "simulated"]
             fact_ids = list(dict.fromkeys((chosen or list(self.ctx.facts)) + sim_ids))
-            prompt = f"Question: {s.question}\nChallenge summary: {self.ctx.challenge_summary or 'none'}\nFacts: {self._facts_for_prompt(fact_ids)}"
+            prompt = (
+                f"Question: {s.question}\nChallenger: {challenge_note}\nReversal search: {self.ctx.challenge_summary or 'none'}\n"
+                f"Facts: {self._facts_for_prompt(fact_ids)}"
+            )
             out: ProducerOut = await self._call(producer, "producer", prompt, ProducerOut)  # type: ignore[assignment]
             s.status = "validating"
-            ok, bad = validate_claims(out.claims, self.ctx.facts, v.players)
+            ok, bad = validate_claims(self._render(out), self.ctx.facts, v.players)
             self._trace("validator", "validation", f"{len(ok)} claims approved, {len(bad)} rejected")
             if bad:
                 feedback = "\n".join(f"- {c.text[:120]} -> {'; '.join(e)}" for c, e in bad)
                 self._trace("producer", "repair", f"one repair attempt for {len(bad)} rejected claims")
                 out2: ProducerOut = await self._call(
-                    producer, "producer", prompt + f"\nThese claims were rejected by validation; fix or drop them:\n{feedback}", ProducerOut
+                    producer, "producer", prompt + f"\nThese were rejected by validation; fix or drop them:\n{feedback}", ProducerOut
                 )  # type: ignore[assignment]
-                ok2, bad2 = validate_claims(out2.claims, self.ctx.facts, v.players)
+                ok2, bad2 = validate_claims(self._render(out2), self.ctx.facts, v.players)
                 self._trace("validator", "validation", f"after repair: {len(ok2)} approved, {len(bad2)} rejected")
                 ok, bad = ok2, bad + bad2
             s.rejected_claims = [RejectedClaim(claim=c, errors=e) for c, e in bad]
@@ -423,6 +494,7 @@ class Workflow:
             s.claims = ok
             s.outcome = "answered" if self.ctx.facts else "insufficient_data"
             s.status = "complete"
+            self._with_casual()
             self._sync()
             return s
         except ProviderError as exc:

@@ -5,8 +5,9 @@ const seqTime = async (page: Page) => {
   return Number(/t = ([\d.]+)/.exec(text)?.[1]);
 };
 
+// The argument page: replay plus ask box, nothing pre-selected.
 const ready = async (page: Page) => {
-  await page.goto("/");
+  await page.goto("/#/investigate");
   await expect(page.getByTestId("pitch-canvas")).toBeVisible();
 };
 
@@ -94,15 +95,29 @@ test("answers computed past the replay position are flagged", async ({ page }) =
   await page.getByTestId("cutoff-mode").getByText("Up to replay").click();
   await page.getByTestId("scrubber").fill("17");
   await page.getByTestId("suggest-pass_completion").click();
-  await expect(page.getByTestId("answer")).toContainText("Data to 63:29");
+  await expect(page.getByTestId("answer")).toContainText("data to 63:29");
   await expect(page.getByTestId("stale-warning")).toHaveCount(0);
   await page.getByTestId("scrubber").fill("5");
   await expect(page.getByTestId("stale-warning")).toBeVisible();
 });
 
-test("pages, header search, stat cards and chart clicks are interactive", async ({ page }) => {
-  await ready(page);
-  // A stat card is a real fact: clicking it seeks and draws it.
+test("the press page leads with the finding and the assumption that flips it", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("hero-number")).toHaveText("71 of 200", { timeout: 30_000 });
+  await expect(page.getByTestId("hero-flip")).toContainText("1.2 s", { timeout: 30_000 });
+  // Opens frozen on the measured gap when the ball arrived.
+  await expect(page.getByTestId("selected-fact")).toContainText("8.5 m");
+  await expect(page.getByTestId("caption")).toHaveText("F114");
+  await page.getByTestId("hero-investigate").click();
+  await expect(page).toHaveURL(/#\/investigate$/);
+  await expect(page.getByTestId("answer")).toContainText("Answered", { timeout: 30_000 });
+});
+
+test("pages, stat cards and chart clicks are interactive", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("pitch-canvas")).toBeVisible();
+  // Secondary stats sit behind a disclosure; a stat card is a real fact: clicking it seeks and draws it.
+  await page.getByTestId("more-toggle").click();
   await page.getByTestId("stat-pass_distance").click();
   await expect(page.getByTestId("selected-fact")).toContainText("17.7 m");
   expect(await seqTime(page)).toBeCloseTo(16.3, 1);
@@ -113,10 +128,10 @@ test("pages, header search, stat cards and chart clicks are interactive", async 
   await chart.click({ position: { x: 200, y: 100 } });
   await expect.poll(() => seqTime(page)).not.toBeCloseTo(16.3, 1);
 
-  // Header search asks the question and opens the Ask page.
-  await page.getByTestId("header-search").fill("How far did Halvorsen run?");
-  await page.getByTestId("header-search").press("Enter");
-  await expect(page).toHaveURL(/#\/investigate$/);
+  // One ask box, on the argument page.
+  await page.getByTestId("nav-investigate").click();
+  await page.getByTestId("question-input").fill("How far did Halvorsen run?");
+  await page.getByTestId("ask").click();
   await expect(page.getByTestId("answer")).toContainText("Halvorsen covered");
 
   // Players page: selecting a player highlights them and shows their speed chart.
@@ -126,6 +141,17 @@ test("pages, header search, stat cards and chart clicks are interactive", async 
 
   await page.getByTestId("nav-methods").click();
   await expect(page.getByText("lane_access/1").first()).toBeVisible();
+});
+
+test("off-catalogue questions are refused, not answered about someone else", async ({ page }) => {
+  await ready(page);
+  await page.getByTestId("question-input").fill("Should Messi press earlier?");
+  await page.getByTestId("ask").click();
+  await expect(page.getByTestId("answer")).toContainText("no player called Messi");
+  await page.getByTestId("question-input").fill("Should Kiprono make a run or hold?");
+  await page.getByTestId("ask").click();
+  await expect(page.getByTestId("answer")).toContainText("only simulate one decision");
+  await expect(page.getByTestId("answer")).not.toContainText(/simulated, /i);
 });
 
 test("stacked layout at narrow width has no horizontal scroll", async ({ page }) => {

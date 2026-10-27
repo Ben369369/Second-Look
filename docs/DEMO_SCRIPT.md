@@ -1,25 +1,28 @@
-# Demo script (target ~110 s, under 2 minutes)
+# Demo script (target 1:50, hard limit under 2:00)
 
-Record the live site (https://second-look-dusky.vercel.app) or the local app, in a browser window about 1600×1000. Everything shown is real, working software. The hosted site runs in **offline mode**; say so there. A live on-device answer (Foundry Local) is only available on the local app with `SECOND_LOOK_MODE=foundry_local`.
+Two takes, one edit. Everything shown is real, working software.
 
-**Before recording:**
-- Open the Overview page.
-- Make sure the replay is at 63:12.
-- Check that "Synthetic match" and "Offline demonstration — no language model connected" are visible in the header.
+- **Take A, the hosted site** (https://second-look-dusky.vercel.app): offline mode, every click is instant.
+- **Take B, the local app** with `SECOND_LOOK_MODE=foundry_local`: the four agents running on-device with Foundry Local (`qwen3-8b`). One answer takes 1–3 minutes; speed the wait up in the edit and **label it on screen**.
 
-| Time | On screen | Say (suggested) |
-|---|---|---|
-| 0–12 s | **Overview.** Press play; let the move run for a few seconds. | "Football arguments hide their assumptions. *Should the right-back have pressed earlier?* Second Look puts that argument on the pitch. This is a synthetic match: fictional teams, simulated data." |
-| 12–30 s | Click the **Pressing decision** chip in *Ask Second Look*. Click the first evidence row (8.5 m) to show the measurement drawn on the pitch. | "It finds the moment: Halvorsen was 8.5 metres off Rossi when the ball arrived and took 1.7 seconds to close Rossi down. Every number comes from code and is labelled measured, estimated or simulated, and clicking it shows it on the pitch." |
-| 30–50 s | **What if?** page. Show the three action cards, then play the simulated replay ("Press earlier"), pointing at the dashed recorded ghosts. | "From the pass that triggered the press, a transparent simulator replays the next eight seconds 200 times for each choice. Pressing earlier without cover let Harbor into danger in 71 of 200 runs, against 30 with the right-back holding position: pressing early leaves space behind." |
-| 50–72 s | Drag **Cover delay** from 0.6 s to 1.2 s. Wait for "updating" to clear and show the Finding change. | "Add a teammate covering the inside pass and it's close to holding: no clear winner under a rule we fixed in advance. Make the cover arrive late and holding becomes the clear recommendation. The answer depends on that assumption, and the app shows it." |
-| 72–88 s | Click **Run stress test** and show the grid. Then open **Ask & evidence**, expand **How this answer was made**, and switch to **Analyst view** if needed. | "A challenger searches a fixed grid of assumptions for settings that flip the finding. The answer comes from Microsoft Agent Framework roles — planner, evidence analyst, challenger, producer — and a validator that rejects any claim whose numbers aren't in the evidence. Here it's running offline, with rule-based routing, and it says so." |
-| 88–102 s | Switch to **Fan view**. | "Same facts, different presentation: plain language for a fan, with the caveat attached." |
-| 102–110 s | **Recap & overlay.** Click a cue row so the overlay appears on the pitch, then **Download overlay JSON**. | "And a timed overlay a broadcaster can render: every card cites its evidence, and simulations are labelled. Evidence you can inspect, alternatives labelled as simulations." |
+Browser window about 1600×1000, zoom 100%, bookmarks bar hidden, notifications off. Before Take B, ask one warm-up question so the model is loaded, then refresh.
+
+| Time | Take | On screen | Say (suggested) |
+|---|---|---|---|
+| 0:00–0:15 | A | **The press** opens on the question, "71 of 200", and the pitch frozen with the 8.5 m gap drawn. | "Should the right-back have pressed earlier? Fans argue about this every week. Second Look replays the next eight seconds two hundred times for each choice. Pressing earlier lets Harbor into a dangerous position in 71 of 200. Holding: 30." |
+| 0:15–0:38 | A | **Three choices.** The verdict line and the three counts. Drag **Cover delay** from 0.6 s to 1.2 s; wait for "updating" to clear and let the headline change to "Holding position is the clear call". | "With a teammate covering the inside pass it's too close to call, under a rule we fixed before any run. Make that cover arrive half a second later and holding becomes the clear call. The answer depends on that assumption, so the app shows it instead of hiding it." |
+| 0:38–0:45 | A | Under **Try to flip it**, click **Run stress test** and show the sentence above the grid. | "A challenger searches a grid of assumptions for settings that flip the answer." |
+| 0:45–1:15 | B | **The argument**, Analyst view. Ask the pressing question; show "planning…". Cut with the label **"≈2 min later — sped up"**. Show the badge **AI agents · on-device · qwen3-8b**, then expand **How this answer was made** and scroll to a validator line that **rejected** a claim. | "Here the same question goes to four Microsoft Agent Framework agents, a planner, an evidence analyst, a challenger and a producer, running on this laptop with Foundry Local. The agents choose the evidence and explain it, but code writes every number. When the producer wrote a claim the numbers don't support, the validator rejected it and showed why." |
+| 1:15–1:27 | B | Switch to **Fan view**. It changes instantly. | "Same facts for a fan: plain words, the caveat attached, nothing re-run." |
+| 1:27–1:48 | A or B | **On air.** Click **Play recap** and let a card appear on the pitch, ending on the SIMULATION card. | "And for a broadcast desk, the answer becomes timed cards on the replay. Every card cites a fact, and simulations stay labelled. Illustrative, not a prediction: an argument with its assumptions out in the open." |
+
+If an on-device run happens to have no rejected claim, show the validator line ("N claims approved, M rejected") and say "a validator checks every claim" instead of describing a rejection.
 
 **Don't:**
-- claim a live model on the hosted site, a cloud Foundry model, real players, or real-match accuracy;
+- say the hosted site uses a live model, or call the on-device model "cloud Foundry";
+- claim personalization, real-time analysis, multiple languages, real players or real-match accuracy;
+- hide the on-device wait or the "updating" state; label any speed-up;
 - use club logos, real footage or copyrighted music;
-- speed the video up in a way that hides the "updating" state.
+- end on the JSON download.
 
-**Optional live segment (local app, Foundry Local):** ask the pressing question, then cut to the finished answer with an on-screen label such as "~80 s later, sped up" (never hide the wait). Show the badge "AI agents · on-device · qwen3-8b" and expand **How this answer was made** to show the model calls, tool calls and validator. Say "running on-device with Foundry Local", not "cloud Foundry".
+**Upload:** YouTube, visibility **Public**. Title: *Second Look — the football argument, with its assumptions on the pitch*. Description: the first paragraph of `docs/SUBMISSION.md`, then the repo and live-demo links. Check that it plays in a signed-out window.

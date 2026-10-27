@@ -35,6 +35,7 @@ class InvestigationContext:
     tool_calls: int = 0
     notes: list[str] = field(default_factory=list)
     challenge_summary: str | None = None
+    reversal_changed: int | None = None  # settings in the grid that change the finding
 
     @property
     def bundle(self) -> ReplayBundle:
@@ -171,6 +172,7 @@ def build_tools(ctx: InvestigationContext, agent: str) -> dict[str, Any]:
             ctx.log_tool(agent, "search_reversal", f"no branch: {exc}", t0)
             return json.dumps({"error": "no_branch", "message": str(exc)})
         ctx.challenge_summary = res.conclusion
+        ctx.reversal_changed = len(res.changed)
         if res.run_id not in ctx.sim_run_ids:
             ctx.sim_run_ids.append(res.run_id)
         ctx.log_tool(agent, "search_reversal", f"{len(res.changed)} of {len(res.cells)} settings change the finding", t0)

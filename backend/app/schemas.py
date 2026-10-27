@@ -454,6 +454,8 @@ class InvestigationState(Strict):
     simulation_run_ids: list[str] = Field(default_factory=list)
     challenge_summary: str | None = None
     claims: list[Claim] = Field(default_factory=list)
+    # The fan view of the same facts, rendered by code in the same run, so switching audience never re-runs.
+    casual_claims: list[Claim] = Field(default_factory=list)
     rejected_claims: list[RejectedClaim] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)

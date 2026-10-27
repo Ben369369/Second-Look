@@ -1,6 +1,6 @@
 # Demo script (target ~110 s, under 2 minutes)
 
-Record the live site (https://second-look-dusky.vercel.app) or the local app, in a browser window about 1600×1000. Everything shown is real, working software. The app runs in **offline mode**: say so, and don't imply a live AI model.
+Record the live site (https://second-look-dusky.vercel.app) or the local app, in a browser window about 1600×1000. Everything shown is real, working software. The hosted site runs in **offline mode**; say so there. A live on-device answer (Foundry Local) is only available on the local app with `SECOND_LOOK_MODE=foundry_local`.
 
 **Before recording:**
 - Open the Overview page.
@@ -18,8 +18,8 @@ Record the live site (https://second-look-dusky.vercel.app) or the local app, in
 | 102–110 s | **Recap & overlay.** Click a cue row so the overlay appears on the pitch, then **Download overlay JSON**. | "And a timed overlay a broadcaster can render: every card cites its evidence, and simulations are labelled. Evidence you can inspect, alternatives labelled as simulations." |
 
 **Don't:**
-- claim a live model, real players, or real-match accuracy;
+- claim a live model on the hosted site, a cloud Foundry model, real players, or real-match accuracy;
 - use club logos, real footage or copyrighted music;
 - speed the video up in a way that hides the "updating" state.
 
-If the Foundry model becomes available before recording, show one live answer with the trace (model calls, tool calls) instead of the offline badge, and say "live Foundry model".
+**Optional live segment (local app, Foundry Local):** ask the pressing question, then cut to the finished answer with an on-screen label such as "~80 s later, sped up" (never hide the wait). Show the badge "AI agents · on-device · qwen3-8b" and expand **How this answer was made** to show the model calls, tool calls and validator. Say "running on-device with Foundry Local", not "cloud Foundry".

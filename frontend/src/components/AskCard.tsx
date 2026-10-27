@@ -214,6 +214,12 @@ const CLAIM_COLOR: Record<ClaimType, string> = {
 };
 
 function ProviderBadge({ a }: { a: InvestigationState }) {
+  if (a.provider_mode === "foundry_local")
+    return (
+      <Badge color="navy" variant="filled" radius="sm" title={a.provider_label} data-testid="answer-provider">
+        AI agents · on-device · {a.model_deployment}
+      </Badge>
+    );
   if (a.provider_mode === "foundry")
     return (
       <Badge color="navy" variant="filled" radius="sm" title={a.provider_label} data-testid="answer-provider">

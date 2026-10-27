@@ -20,7 +20,7 @@ question ──► investigation workflow (offline rules, or Agent Framework age
 | `backend/app/metrics/` | `view.py` cutoff view (no data after the cursor), `core.py` pure metrics, `facts.py` typed facts with statements rendered by code |
 | `backend/app/simulation/` | `engine.py` vectorised rule-based rollouts, `compare.py` predeclared decision rule and challenger grid, `stats.py` Wilson and paired-bootstrap intervals |
 | `backend/app/investigations/` | `questions.py` supported-question catalogue and offline router; `registry.py` in-process investigation registry |
-| `backend/app/agents/` | `workflow.py` multi-agent orchestration, `tools.py` agent tools, `validate.py` claim validator, `provider.py` Foundry client |
+| `backend/app/agents/` | `workflow.py` multi-agent orchestration, `tools.py` agent tools, `validate.py` claim validator, `provider.py` chat client for cloud Foundry or Foundry Local |
 | `frontend/src/` | Mantine dashboard: replay canvas with telestration, Ask & evidence, What-if, Players, Events, Methods |
 
 ## Agent workflow (Microsoft Agent Framework)
@@ -52,7 +52,8 @@ Rejected claims go back to the producer once with the errors (one repair round).
 
 **Modes.**
 - `offline`: rule-based router, same tools, labelled "Offline demonstration — no language model connected".
-- `foundry`: real model calls, with model and tool-call counts and tokens in the trace.
+- `foundry`: real model calls to a cloud Foundry deployment, with model and tool-call counts and tokens in the trace.
+- `foundry_local`: the same agents on a model running on this device through Foundry Local, reached with Agent Framework's `OpenAIChatCompletionClient` at the local server's OpenAI-compatible endpoint (the `agent-framework-foundry-local` package pins an SDK that does not work with Foundry Local CLI 0.12). Small local models need extra care: JSON shape hints in the prompt instead of `response_format` (the local server mishandles it), `/no_think`, json-repair of syntax before schema validation, per-role token caps, an HTTP timeout of a third of the budget, `max_invocations=1` on the data tools (reset per retry), no tool for the planner (the roster is in its prompt), and one investigation at a time.
 - `fallback`: as described above.
 
 Cached model responses are never replayed as live runs.
@@ -73,13 +74,15 @@ Cached model responses are never replayed as live runs.
 - malformed output getting one repair, then fallback;
 - invalid tool arguments.
 
-A live Foundry smoke test runs only with `SECOND_LOOK_LIVE_TESTS=1`, and is reported as **skipped** otherwise.
+A live Foundry smoke test runs only with `SECOND_LOOK_LIVE_TESTS=1`, and is reported as **skipped** otherwise. `tests/conftest.py` forces offline mode for the regular suite. With Foundry Local it passed: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU.
 
 ## Configuration
 
 | Variable | Meaning |
 |---|---|
-| `SECOND_LOOK_MODE` | `offline` (default) or `foundry` |
+| `SECOND_LOOK_MODE` | `offline` (default), `foundry` or `foundry_local` |
+| `FOUNDRY_LOCAL_MODEL` | Foundry Local model alias, e.g. `qwen3-8b` |
+| `FOUNDRY_LOCAL_ENDPOINT` | Optional; otherwise read from `foundry server status` |
 | `FOUNDRY_PROJECT_ENDPOINT` | `https://<resource>.services.ai.azure.com/api/projects/<project>` |
 | `FOUNDRY_MODEL_DEPLOYMENT` | Model deployment name in that project |
 | `INVESTIGATION_TIMEOUT_SECONDS` | Total budget per investigation (default 60) |

@@ -56,9 +56,9 @@ def capabilities(request: Request) -> Capabilities:
     settings = request.app.state.settings
     inv = request.app.state.investigations
     return Capabilities(
-        provider_mode="foundry" if inv.model_enabled else "offline",
-        provider_label=f"Microsoft Foundry · {settings.foundry_model_deployment} · Agent Framework" if inv.model_enabled else OFFLINE_LABEL,
-        model_configured=settings.foundry_configured,
+        provider_mode=settings.mode if inv.model_enabled else "offline",
+        provider_label=settings.model_label if inv.model_enabled else OFFLINE_LABEL,
+        model_configured=settings.model_configured,
         scenarios=_registry(request).ids(),
         languages=["en"],
         synthetic_data_only=True,

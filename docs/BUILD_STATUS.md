@@ -150,6 +150,7 @@ Offline only. No Azure resources created and no credentials configured. Nothing 
 
 ## Next concrete task
 
+0. **Done (27 Oct): live model via Foundry Local.** `SECOND_LOOK_MODE=foundry_local` runs the four agents on `qwen3-8b` on-device. `SECOND_LOOK_LIVE_TESTS=1 pytest tests/test_agents.py -k live` passed: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU. A UI run also completed (provider badge "AI agents · on-device · qwen3-8b", 4 claims, 0 rejected, ~1.4 min, one malformed challenger reply repaired). Local-model adaptations: JSON shape hints in the prompt instead of `response_format`, `/no_think`, json-repair before schema validation, token caps, an HTTP timeout, `max_invocations=1` on data tools, and one local investigation at a time. `tests/conftest.py` keeps the regular suite offline (77 passed, 1 skipped).
 1. **Blocked — Azure model deployment hold (27 Oct, early hours):**
    - Created on Azure for Students (bn7622@princeton.edu, Switzerland North; the subscription policy only allows italynorth, switzerlandnorth, spaincentral, uaenorth and austriaeast): resource group `second-look-rg`, AIServices resource `secondlook-chui-ai`, and project `second-look` (endpoint `https://secondlook-chui-ai.services.ai.azure.com/api/projects/second-look`).
    - Every model deployment fails with **715-123420 "unusual activity"**: gpt-5.4-mini (zero quota), gpt-5-mini (quota 500), gpt-oss-120b (quota 5000).

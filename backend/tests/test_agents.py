@@ -41,7 +41,7 @@ def _plan(intent="press_timing", players=("CED-02",), needs_sim=True, clarificat
 
 
 def facts_in_prompt(messages):
-    m = re.search(r"Facts: (\[.*\])", prompt_text(messages), re.S)
+    m = re.search(r"^Facts: (\[.*\])$", prompt_text(messages), re.M)  # the facts list is one line
     return json.loads(m.group(1)) if m else []
 
 
@@ -50,7 +50,7 @@ def honest_script(producer_extra=None, repair_ok=True):
 
     def script(role, messages, turn):
         if role == "planner":
-            return {"tool": "list_supported_questions", "args": {}} if turn == 0 else {"text": _plan()}
+            return {"text": _plan()}  # the planner gets the catalogue and roster in its prompt
         if role == "evidence analyst":
             if turn == 0:
                 return {"tool": "compute_metrics", "args": {"intent": "press_timing", "player_ids": ["CED-02"]}}
@@ -84,7 +84,7 @@ def test_real_tool_calls_and_typed_handoffs(bundle):
     state, client = run(bundle, honest_script())
     assert state.status == "complete" and state.provider_mode == "foundry"
     tools = [t.tool for t in state.trace if t.kind == "tool"]
-    assert {"list_supported_questions", "compute_metrics", "evaluate_interventions", "search_reversal"} <= set(tools)
+    assert {"compute_metrics", "evaluate_interventions", "search_reversal"} <= set(tools)
     assert state.tool_calls == len(tools)
     assert {f.evidence_class for f in state.facts} >= {"observed", "simulated"}
     assert state.simulation_run_ids and state.claims and not state.rejected_claims
@@ -164,24 +164,38 @@ def test_tools_reject_invalid_arguments(bundle):
     from app.agents.tools import InvestigationContext, build_tools
 
     ctx = InvestigationContext(view=make_view(bundle))
-    tools = build_tools(ctx, "test")
-    assert json.loads(tools["compute_metrics"](intent="bogus"))["error"] == "unknown_intent"
-    assert json.loads(tools["compute_metrics"](intent="running", player_ids=["XYZ-99"]))["error"] == "unknown_player_ids"
-    assert json.loads(tools["evaluate_interventions"](cover_delay_s=0.5, attacker_policy="chaotic"))["error"] == "invalid_arguments"
-    assert not ctx.facts and ctx.tool_calls == 3
+    fresh = lambda: build_tools(ctx, "test")  # noqa: E731 -- data tools allow one call per agent run
+    assert json.loads(fresh()["compute_metrics"](intent="bogus"))["error"] == "unknown_intent"
+    assert json.loads(fresh()["compute_metrics"](intent="running", player_ids=["XYZ-99"]))["error"] == "unknown_player_ids"
+    assert json.loads(fresh()["evaluate_interventions"](cover_delay_s=0.5, attacker_policy="chaotic"))["error"] == "invalid_arguments"
+    # A second call within the same run is refused by the framework's own limit.
+    tools = fresh()
+    tools["compute_metrics"](intent="running", player_ids=["CED-02"])
+    with pytest.raises(Exception, match="maximum invocation limit"):
+        tools["compute_metrics"](intent="running", player_ids=["CED-02"])
+    ctx.facts.clear()
+    assert not ctx.facts and ctx.tool_calls == 4  # 3 rejected calls + 1 valid; the refused repeat is not logged
 
 
 @pytest.mark.skipif(
-    not (os.environ.get("SECOND_LOOK_LIVE_TESTS") == "1" and os.environ.get("FOUNDRY_PROJECT_ENDPOINT") and os.environ.get("FOUNDRY_MODEL_DEPLOYMENT")),
-    reason="LIVE TEST SKIPPED: set SECOND_LOOK_LIVE_TESTS=1, FOUNDRY_PROJECT_ENDPOINT and FOUNDRY_MODEL_DEPLOYMENT (and az login) to run against a real Foundry model.",
+    not (os.environ.get("SECOND_LOOK_LIVE_TESTS") == "1" and load_settings().model_configured),
+    reason=(
+        "LIVE TEST SKIPPED: set SECOND_LOOK_LIVE_TESTS=1 and either SECOND_LOOK_MODE=foundry with FOUNDRY_PROJECT_ENDPOINT/"
+        "FOUNDRY_MODEL_DEPLOYMENT (and az login), or SECOND_LOOK_MODE=foundry_local with FOUNDRY_LOCAL_MODEL."
+    ),
 )
-def test_live_foundry_smoke(bundle):
-    from app.agents.provider import foundry_client_factory
+def test_live_model_smoke(bundle):
+    from app.agents.provider import client_factory
 
     settings = load_settings()
-    settings = replace(settings, mode="foundry")
-    wf = Workflow(_state(), make_view(bundle), settings, foundry_client_factory(settings))
+    state0 = _state().model_copy(update={"provider_mode": settings.mode, "provider_label": settings.model_label})
+    wf = Workflow(state0, make_view(bundle), settings, client_factory(settings))
     state = asyncio.run(wf.run_foundry())
-    assert state.provider_mode == "foundry", state.errors
+    print("\nLIVE RESULT:", settings.model_label, "| mode", state.provider_mode, "| model calls", state.model_calls,
+          "| tool calls", state.tool_calls, "| claims", len(state.claims), "| rejected", len(state.rejected_claims),
+          "| elapsed ms", state.elapsed_ms, "| errors", state.errors)
+    for t in state.trace:
+        print("   ", t.agent, t.kind, t.tool or "", t.summary)
+    assert state.provider_mode == settings.mode and not state.errors, state.errors  # a live run, not a fallback
     assert state.model_calls >= 4 and state.tool_calls >= 2
     assert state.claims and all(not validate_claim(c, {f.fact_id: f for f in state.facts}, make_view(bundle).players) for c in state.claims)

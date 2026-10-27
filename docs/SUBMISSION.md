@@ -25,17 +25,16 @@ All data is synthetic, and all teams and players are fictional.
 | Technology | Status |
 |---|---|
 | **Microsoft Agent Framework (Python)** | **Used.** `agent-framework-core` 1.23.0 and `agent-framework-foundry` 1.15.0: four `Agent` roles with function tools, typed structured outputs and `FunctionInvocationConfiguration` limits, tested through the real framework loop. |
-| **Microsoft Foundry** | **Provisioned, model not connected.** A Foundry resource and project (`second-look`, Switzerland North) were created. Every model deployment (gpt-5-mini, gpt-oss-120b, within quota) was blocked by Azure error 715-123420 on the Azure for Students subscription. The app therefore runs in clearly labelled offline mode; the live path is implemented, and its test is reported as skipped. |
+| **Foundry Local** | **Used, live.** The four Agent Framework agents call `qwen3-8b` running on-device through Foundry Local (CLI 0.12.1), via Agent Framework's `OpenAIChatCompletionClient` (`agent-framework-openai` 1.17.0) pointed at the local server. Live test: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU. Verified in the UI with the trace shown. Runs on the developer's machine only; the public Vercel demo stays offline. |
+| **Microsoft Foundry (cloud)** | **Provisioned, model not connected.** A Foundry resource and project (`second-look`, Switzerland North) were created. Every model deployment (gpt-5-mini, gpt-oss-120b, within quota) was blocked by Azure error 715-123420 on the Azure for Students subscription. The cloud path is implemented and tested with scripted replies only; the hosted demo runs in clearly labelled offline mode. |
 | **Microsoft Entra ID / azure-identity** | Used for Foundry authentication (CLI and service-principal credentials, no API keys). |
 | Azure AI Speech, Container Apps | Not used. |
 
 Hosting is Vercel (not Microsoft).
 
-**Update this table** if a model deployment succeeds before submission, and record the live test result in `docs/BUILD_STATUS.md`.
-
 ## Category
 
-Best Multi-Agent Orchestration is the natural fit: distinct agent roles with typed handoffs, a challenger, deterministic validation with a bounded repair, and labelled fallback. Be candid that live-model results could not be shown because of the Azure hold.
+Best Multi-Agent Orchestration is the natural fit: distinct agent roles with typed handoffs, a challenger, deterministic validation with a bounded repair, and labelled fallback. Live-model results come from Foundry Local on one laptop (one live smoke run plus UI checks), not a full live evaluation; the cloud model was blocked by the Azure hold. Say so.
 
 ## Checklist
 

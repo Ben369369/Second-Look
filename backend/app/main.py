@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from app.agents.provider import foundry_client_factory
+from app.agents.provider import client_factory
 from app.api.routes import router
 from app.config import Settings, load_settings
 from app.data.loader import ScenarioRegistry
@@ -19,7 +19,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.registry = ScenarioRegistry(settings.fixtures_dir)
-    app.state.investigations = InvestigationRegistry(settings, foundry_client_factory(settings))
+    app.state.investigations = InvestigationRegistry(settings, client_factory(settings))
     install_error_handlers(app)
     app.include_router(router)
     return app

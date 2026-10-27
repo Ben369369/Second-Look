@@ -152,7 +152,7 @@ class ReplayBundle(Strict):
 
 
 class Capabilities(Strict):
-    provider_mode: Literal["offline", "foundry"]
+    provider_mode: Literal["offline", "foundry", "foundry_local"]
     provider_label: str
     model_configured: bool
     scenarios: list[str]
@@ -406,7 +406,7 @@ class ChallengeResult(Strict):
 # ---------------------------------------------------------------------------
 
 ClaimType = Literal["observed", "estimated", "simulated", "interpretation", "insufficient_data"]
-ProviderMode = Literal["offline", "foundry", "fallback"]
+ProviderMode = Literal["offline", "foundry", "foundry_local", "fallback"]
 InvestigationStatus = Literal["queued", "planning", "evidence", "challenging", "producing", "validating", "complete", "failed"]
 
 

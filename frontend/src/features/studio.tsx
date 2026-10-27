@@ -90,7 +90,7 @@ export function StudioProvider(props: { bundle: ReplayBundle; scenarioId: string
       const done = (s: InvestigationState) => s.status === "complete" || s.status === "failed";
       const poll = async (s: InvestigationState): Promise<InvestigationState> => {
         // Model-backed investigations run in the background; poll until finished (bounded).
-        const until = Date.now() + 75_000;
+        const until = Date.now() + 330_000; // on-device models can take a few minutes; the server enforces its own budget
         let cur = s;
         while (!done(cur) && Date.now() < until) {
           setAnswer(cur);

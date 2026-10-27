@@ -25,7 +25,8 @@ What it is **not**: a real-match tracking system, a judge of real players, or a 
 |---|---|
 | Replay, facts, evidence, simulator, challenger, What-if page, audience modes, recap/overlay | Built and tested; deployed |
 | Agent Framework workflow (4 agents, validator, retries, fallback) | Built and tested through the real framework loop with scripted model replies |
-| Live Microsoft Foundry model | **Not connected.** A Foundry resource and project exist, but every model deployment on the available Azure for Students subscription was blocked by Azure error 715-123420. The app runs in labelled offline mode. |
+| Live model, on-device (Foundry Local) | **Connected and verified locally.** The four agents run on `qwen3-8b` through Microsoft Foundry Local on the developer's laptop. Live test: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU. Also verified end to end in the UI. |
+| Live model, cloud (Microsoft Foundry) | **Not connected.** A Foundry resource and project exist, but every model deployment on the available Azure for Students subscription was blocked by Azure error 715-123420. The public Vercel demo therefore runs in labelled offline mode. |
 | Evaluation | 12 held-out variants: predeclared behaviour met 12/12; 0 of 156 shown claims fail re-validation; 60/60 injected fabrications rejected ([docs/EVALUATION.md](docs/EVALUATION.md)) |
 
 ## Run it locally
@@ -58,7 +59,9 @@ npm run dev
 | API health | http://127.0.0.1:8000/api/health |
 | API docs (OpenAPI) | http://127.0.0.1:8000/docs |
 
-**Optional: a live Foundry model.** Copy `.env.example` to `.env` and set `SECOND_LOOK_MODE=foundry`, `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL_DEPLOYMENT`, then run `az login`. Authentication is Microsoft Entra ID only, with no API keys. Without these, the app runs in offline mode.
+**Optional: a live model on this device (Foundry Local, no Azure subscription).** Install it with `winget install Microsoft.FoundryLocal`, then run `foundry server start` and `foundry model load qwen3-8b`. In `.env` set `SECOND_LOOK_MODE=foundry_local`, `FOUNDRY_LOCAL_MODEL=qwen3-8b` and `INVESTIGATION_TIMEOUT_SECONDS=300`. A GPU is strongly recommended; one investigation takes 1–2 minutes on a laptop GPU.
+
+**Optional: a live cloud Foundry model.** Copy `.env.example` to `.env` and set `SECOND_LOOK_MODE=foundry`, `FOUNDRY_PROJECT_ENDPOINT` and `FOUNDRY_MODEL_DEPLOYMENT`, then run `az login`. Authentication is Microsoft Entra ID only, with no API keys. Without these, the app runs in offline mode.
 
 ## Tests and evaluation
 

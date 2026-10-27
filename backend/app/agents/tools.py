@@ -73,6 +73,7 @@ def build_tools(ctx: InvestigationContext, agent: str) -> dict[str, Any]:
             "using only data up to the investigation's cutoff. Returns fact ids and code-rendered statements."
         ),
         approval_mode="never_require",
+        max_invocations=1,  # one call per agent run; small models otherwise repeat it
     )
     def compute_metrics(
         intent: Annotated[str, Field(description="One of the supported intent names, e.g. press_timing, passing_options, running.")],
@@ -120,6 +121,7 @@ def build_tools(ctx: InvestigationContext, agent: str) -> dict[str, Any]:
             "Returns simulated facts (ids + statements) and the predeclared rule's verdict."
         ),
         approval_mode="never_require",
+        max_invocations=1,  # one call per agent run; small models otherwise repeat it
     )
     def evaluate_interventions(
         cover_delay_s: Annotated[float, Field(ge=0.0, le=3.0, description="Seconds before the cover player starts screening the inside lane.")] = 0.6,
@@ -153,6 +155,7 @@ def build_tools(ctx: InvestigationContext, agent: str) -> dict[str, Any]:
         name="search_reversal",
         description="Search a fixed grid of cover delays and attacker policies for settings where the simulated finding changes.",
         approval_mode="never_require",
+        max_invocations=1,  # one call per agent run; small models otherwise repeat it
     )
     def search_reversal(
         baseline_cover_delay_s: Annotated[float, Field(ge=0.0, le=3.0)] = 0.6,

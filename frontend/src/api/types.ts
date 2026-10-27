@@ -113,7 +113,7 @@ export interface ReplayBundle {
 }
 
 export interface Capabilities {
-  provider_mode: "offline" | "foundry";
+  provider_mode: "offline" | "foundry" | "foundry_local";
   provider_label: string;
   model_configured: boolean;
   scenarios: string[];
@@ -316,7 +316,7 @@ export interface InvestigationState {
   audience: "casual" | "analyst";
   status: "queued" | "planning" | "evidence" | "challenging" | "producing" | "validating" | "complete" | "failed";
   outcome: "answered" | "unsupported" | "clarify" | "insufficient_data" | null;
-  provider_mode: "offline" | "foundry" | "fallback";
+  provider_mode: "offline" | "foundry" | "foundry_local" | "fallback";
   provider_label: string;
   model_deployment: string | null;
   intent: string | null;
@@ -368,7 +368,7 @@ export interface ExportBundle {
   scenario_hash: string;
   question: string;
   audience: "casual" | "analyst";
-  provider_mode: "offline" | "foundry" | "fallback";
+  provider_mode: "offline" | "foundry" | "foundry_local" | "fallback";
   provider_label: string;
   timebase: "sequence_s";
   sequence_duration_s: number;

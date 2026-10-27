@@ -44,7 +44,7 @@ class InvestigationRegistry:
 
     @property
     def model_enabled(self) -> bool:
-        return self.settings.mode == "foundry" and self.settings.foundry_configured and self.client_factory is not None
+        return self.settings.mode != "offline" and self.settings.model_configured and self.client_factory is not None
 
     def get(self, investigation_id: str) -> InvestigationState | None:
         self._expire()
@@ -54,7 +54,9 @@ class InvestigationRegistry:
     async def start(self, bundle: ReplayBundle, req: InvestigationRequest) -> InvestigationState:
         self._expire()
         active = sum(1 for t in self._tasks.values() if not t.done())
-        if active >= MAX_ACTIVE:
+        # One on-device model serves one investigation at a time; parallel runs just slow each other down.
+        limit = 1 if self.settings.mode == "foundry_local" else MAX_ACTIVE
+        if active >= limit:
             raise RegistryFull("too many investigations running; try again shortly")
         view = make_view(bundle, req.cursor_s)
         state = InvestigationState(
@@ -65,9 +67,9 @@ class InvestigationRegistry:
             question=req.question,
             audience=req.audience,
             status="queued",
-            provider_mode="foundry" if self.model_enabled else "offline",
-            provider_label=f"Microsoft Foundry · {self.settings.foundry_model_deployment}" if self.model_enabled else OFFLINE_LABEL,
-            model_deployment=self.settings.foundry_model_deployment if self.model_enabled else None,
+            provider_mode=self.settings.mode if self.model_enabled else "offline",
+            provider_label=self.settings.model_label if self.model_enabled else OFFLINE_LABEL,
+            model_deployment=self.settings.model_name if self.model_enabled else None,
         )
         self._items[state.investigation_id] = (time.time(), state)
         wf = Workflow(state, view, self.settings, self.client_factory)

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 from typing import Any
 
@@ -30,6 +31,9 @@ from app.metrics.view import SequenceView
 from app.schemas import Claim, Fact, InvestigationState, RejectedClaim, TraceStep
 
 MAX_RETRIES = 2
+# On-device reply caps (tokens): JSON hand-offs are short; the producer writes several sentences.
+LOCAL_MAX_TOKENS = {"ProducerOut": 1600}
+LOCAL_MAX_TOKENS_DEFAULT = 700
 PER_CALL_TIMEOUT_S = 30.0
 FUNCTION_LIMITS = {"max_iterations": 4, "max_function_calls": 6, "max_duration_seconds": 30}
 
@@ -68,8 +72,8 @@ INTENTS = ", ".join(f"{q.intent} ({q.label}: e.g. '{q.example}')" for q in CATAL
 
 PLANNER = f"""You are the planner for Second Look, which answers questions about ONE synthetic football sequence.
 Classify the user's question into exactly one supported intent: {INTENTS}.
-If none fits, use intent "unsupported". Use the list_supported_questions tool to see player ids and names.
-Fill player_ids/team_ids only with ids from that tool. Ask for clarification (clarification field) only if the
+If none fits, use intent "unsupported". The players in this sequence are listed in the prompt.
+Fill player_ids/team_ids only with ids from that list. Ask for clarification (clarification field) only if the
 question is materially ambiguous (e.g. a shirt number that exists on both teams); otherwise set it to null.
 needs_simulation is true only for counterfactual questions (what would have happened if...).
 Keep rationale to one short sentence without numbers."""
@@ -91,7 +95,7 @@ PRODUCER = """You are the producer. Write a concise answer as claim objects. Rul
 - interpretation and insufficient_data claims must contain NO numbers.
 - Only name players who are subjects of the facts you cite.
 - {audience}
-Return 3 to 6 claims."""
+Return 3 to 5 claims, each under 35 words."""
 
 AUDIENCE = {
     "casual": "Audience: a football fan. Plain language (prefer the facts' 'plain' sentences), one finding, one trade-off, one caveat.",
@@ -101,6 +105,54 @@ AUDIENCE = {
 
 class ProviderError(RuntimeError):
     pass
+
+
+# Compact output shapes for on-device models (see Workflow._call).
+SHAPE_HINTS = {
+    "PlanOut": '{"intent": "press_timing", "player_ids": ["CED-02"], "team_ids": [], "needs_simulation": true, "clarification": null, "rationale": "one short sentence"}',
+    "EvidenceOut": '{"supporting_fact_ids": ["<fact_id>"], "contradicting_fact_ids": [], "missing_data": []}',
+    "ChallengeOut": '{"finding_robust": false, "concerns": ["short sentence without numbers"]}',
+    "ProducerOut": '{"claims": [{"claim_type": "observed|estimated|simulated|interpretation|insufficient_data", "text": "...", "fact_ids": ["<fact_id>"]}]}',
+}
+
+
+def _strict_ok(text: str, out_type: type[BaseModel]) -> bool:
+    try:
+        out_type.model_validate_json(_extract_json(text))
+        return True
+    except Exception:
+        return False
+
+
+def _parse_reply(text: str, out_type: type[BaseModel]) -> BaseModel | None:
+    """Strict parse first; if that fails, repair JSON *syntax* only (stray brackets, quotes,
+    trailing commas) and validate the result against the full schema. Content is never invented:
+    anything the schema rejects is still rejected."""
+    candidate = _extract_json(text)
+    try:
+        return out_type.model_validate_json(candidate)
+    except Exception:
+        pass
+    from json_repair import repair_json
+
+    # Known quirk of small local models: "]]}" for "]}" and no comma between objects. None of
+    # the output schemas here contains a list of lists, so collapsing "]]" is safe for them.
+    patched = re.sub(r"\]\s*\]", "]", candidate)
+    patched = re.sub(r"\}\s*\{", "},{", patched)
+    for attempt in (patched, repair_json(patched), repair_json(candidate)):
+        try:
+            return out_type.model_validate_json(attempt)
+        except Exception:
+            continue
+    return None
+
+
+def _extract_json(text: str) -> str:
+    """The outermost JSON object in a reply (tolerates code fences or a sentence around it).
+    Validation against the schema still decides whether it is accepted."""
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.S)  # reasoning blocks from local models (e.g. Qwen3)
+    start, end = text.find("{"), text.rfind("}")
+    return text[start : end + 1] if 0 <= start < end else text
 
 
 CASUAL_CAVEAT = (
@@ -141,6 +193,8 @@ class Workflow:
         self.settings = settings
         self.client_factory = client_factory
         self.deadline = time.perf_counter() + settings.investigation_timeout_seconds
+        # Local models are slower; give each call a proportional share of the larger budget.
+        self.per_call_timeout = max(PER_CALL_TIMEOUT_S, settings.investigation_timeout_seconds / 3)
         self.t_start = time.perf_counter()
 
     # -- helpers ----------------------------------------------------------------
@@ -164,13 +218,35 @@ class Workflow:
         match the schema gets exactly one repair attempt with the validation error.
         """
         last: Exception | None = None
+        # The schema is also spelled out in the prompt, for models (e.g. small local ones)
+        # that ignore the structured-output setting.
+        if self.settings.mode == "foundry_local":
+            # On-device models read prompts slowly, so they get a compact example of the shape
+            # instead of the full JSON schema (the reply is still validated against the full model).
+            full_prompt = f"{prompt}\n\nReply with only JSON shaped like:\n{SHAPE_HINTS[out_type.__name__]}\n/no_think"
+        else:
+            schema = json.dumps(out_type.model_json_schema(), separators=(",", ":"))
+            full_prompt = f"{prompt}\n\nReply with only a JSON object matching this JSON schema:\n{schema}"
         for attempt in range(MAX_RETRIES + 1):
+            # Tool call limits are per run: a retry starts a fresh conversation and may call them again.
+            for t in getattr(agent, "default_options", {}).get("tools", []) or []:
+                if hasattr(t, "invocation_count"):
+                    t.invocation_count = 0
             remaining = self.deadline - time.perf_counter()
             if remaining <= 1.0:
                 raise ProviderError("investigation time budget exhausted")
             t0 = time.perf_counter()
             try:
-                res = await asyncio.wait_for(agent.run(prompt, options={"response_format": out_type}), timeout=min(PER_CALL_TIMEOUT_S, remaining))
+                # Foundry Local's server mishandles the structured-output setting (it returns the
+                # schema's field names), so local models rely on the schema in the prompt; the
+                # reply is validated against the same Pydantic model either way.
+                # Local replies are also capped in length so a runaway generation cannot eat the budget.
+                options = (
+                    {"max_tokens": LOCAL_MAX_TOKENS.get(out_type.__name__, LOCAL_MAX_TOKENS_DEFAULT)}
+                    if self.settings.mode == "foundry_local"
+                    else {"response_format": out_type}
+                )
+                res = await asyncio.wait_for(agent.run(full_prompt, options=options), timeout=min(self.per_call_timeout, remaining))
             except (asyncio.TimeoutError, OSError, ConnectionError) as exc:
                 last = exc
             except Exception as exc:  # SDK/HTTP errors: retried as transient, then surfaced as provider failure
@@ -188,7 +264,11 @@ class Workflow:
                     value = None
                 if value is None:
                     try:
-                        value = out_type.model_validate_json(res.text)
+                        value = _parse_reply(res.text, out_type)
+                        if value is not None and not _strict_ok(res.text, out_type):
+                            self._trace(name, "repair", "JSON syntax repaired (json-repair); content validated against the schema")
+                        if value is None:
+                            raise ValueError("reply is not valid JSON for the schema")
                     except Exception as exc:
                         self._trace(name, "error", f"malformed structured output ({type(exc).__name__})", int((time.perf_counter() - t0) * 1000))
                         if repaired:
@@ -262,9 +342,15 @@ class Workflow:
 
             # 1. Planner
             s.status = "planning"
-            planner = Agent(client, PLANNER, name="planner", tools=[tools_for("planner")["list_supported_questions"]])
+            # The catalogue and roster are small, so the planner gets them in its prompt (no tool loop).
+            roster = "; ".join(f"{pid} = {v.label(pid)} ({p.role})" for pid, p in v.players.items())
+            planner = Agent(client, PLANNER, name="planner")
             plan: PlanOut = await self._call(
-                planner, "planner", f"Question: {s.question}\nData cutoff: {v.cursor_s:.1f} s into the sequence.", PlanOut
+                planner,
+                "planner",
+                f"Question: {s.question}\nData cutoff: {v.cursor_s:.1f} s into the sequence.\n"
+                f"Teams: CED = Cedar FC, HAR = Harbor FC.\nPlayers: {roster}",
+                PlanOut,
             )  # type: ignore[assignment]
             s.plan_summary = plan.rationale[:200]
             if plan.intent not in LABELS:

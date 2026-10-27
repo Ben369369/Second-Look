@@ -623,8 +623,19 @@ def generate(cfg: HeroConfig) -> tuple[dict, list[dict], list[dict]]:
     return build_manifest(cfg, frames, events), frames, events
 
 
-def write_fixture(cfg: HeroConfig, out_root: Path) -> Path:
+def write_fixture(cfg: HeroConfig, out_root: Path, event_only: bool = False) -> Path:
+    """Write a fixture. `event_only` drops all tracking (the events are unchanged), for
+    testing that spatial and simulated claims are withheld when positions are unavailable."""
     manifest, frames, events = generate(cfg)
+    if event_only:
+        frames = []
+        manifest.update(
+            availability="event-only",
+            frame_count=0,
+            available_fields=["event.type", "event.time_s", "event.player_id", "event.recipient_id", "event.start_position", "event.end_position", "event.outcome"],
+            dataset_hash=dataset_hash(frames, events),
+            known_limitations=manifest["known_limitations"] + ["Event data only: no player or ball tracking is available."],
+        )
     out = out_root / cfg.scenario_id
     out.mkdir(parents=True, exist_ok=True)
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

@@ -56,9 +56,15 @@ test("hero question: evidence cards seek to the measured moment", async ({ page 
   await ready(page);
   await page.getByTestId("suggest-press_timing").click();
   const answer = page.getByTestId("answer");
-  await expect(answer).toContainText("Answered");
+  // The pressing answer also runs the simulator (a few seconds on a cold cache).
+  await expect(answer).toContainText("Answered", { timeout: 30_000 });
   await expect(answer).toContainText("Halvorsen");
-  await expect(answer).toContainText("simulator");
+  // Offline mode is labelled, simulated claims are labelled, and the trace shows how the answer was made.
+  await expect(page.getByTestId("answer-provider")).toHaveText("Rule-matched");
+  await expect(answer).toContainText(/simulated/i);
+  await page.getByTestId("trace-toggle").click();
+  await expect(page.getByTestId("trace")).toContainText("keyword rules matched intent: press_timing");
+  await expect(page.getByTestId("trace")).toContainText("claims approved");
 
   // Defender distance when the ball arrived: recorded at 11.4 s (Rossi's reception).
   await page.getByTestId("fact-defender_distance").first().click();

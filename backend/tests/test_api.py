@@ -64,3 +64,14 @@ def test_ask_endpoint(client):
     assert r.status_code == 200 and body["status"] == "answered" and body["matched_by"] == "offline-rules"
     assert client.post("/api/scenarios/rb_press_hero/ask", json={"question": ""}).status_code == 422
     assert client.post("/api/scenarios/nope/ask", json={"question": "x"}).status_code == 404
+
+
+def test_compare_endpoint_and_limits(client):
+    r = client.post("/api/scenarios/rb_press_hero/compare", json={"rollouts": 64})
+    body = r.json()
+    assert r.status_code == 200 and body["evidence_class"] == "simulated" and len(body["actions"]) == 3
+    assert body["recommendation"]["rule"].startswith("Recommend an action only if")
+    assert client.post("/api/scenarios/rb_press_hero/compare", json={"rollouts": 400}).json()["code"] == "too_many_rollouts"
+    bad = client.post("/api/scenarios/rb_press_hero/compare", json={"presser_id": "HAR-11", "rollouts": 64})
+    assert bad.status_code == 422 and bad.json()["code"] == "invalid_branch"
+    assert client.post("/api/scenarios/rb_press_hero/compare", json={"cover_delay_s": 9}).status_code == 422

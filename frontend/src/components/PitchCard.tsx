@@ -2,6 +2,7 @@ import { Badge, Card, Group, Switch, Text } from "@mantine/core";
 import { useStudio } from "../features/studio";
 import { formatClock, playerLabel, shortPlayer, stateAt } from "../replay/model";
 import { PitchCanvas } from "../replay/PitchCanvas";
+import { CLASS_COLOR } from "./FactList";
 import { PlaybackControls } from "./PlaybackControls";
 
 export function PitchCard({ title = "Replay", compact = false }: { title?: string; compact?: boolean }) {
@@ -42,7 +43,7 @@ export function PitchCard({ title = "Replay", compact = false }: { title?: strin
       </p>
       {selection?.kind === "fact" && (
         <Group gap="xs" mt="xs" wrap="nowrap" align="flex-start" data-testid="selected-fact" className="telestration">
-          <Badge variant="light" color={selection.fact.evidence_class === "observed" ? "navy" : "grape"} radius="sm" style={{ flex: "none" }}>
+          <Badge variant="light" color={CLASS_COLOR[selection.fact.evidence_class]} radius="sm" style={{ flex: "none" }}>
             {selection.fact.evidence_class}
           </Badge>
           <Text fz="sm">{selection.fact.statement}</Text>

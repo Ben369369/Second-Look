@@ -1,0 +1,229 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "ev05",
+  "version": "1",
+  "seed": 11,
+  "title": "Evaluation sequence",
+  "description": "Synthetic right-flank build-up (held-out evaluation variant).",
+  "synthetic": true,
+  "teams": [
+    {
+      "team_id": "CED",
+      "name": "Cedar FC",
+      "short_name": "CED",
+      "color": "#1e3a8a",
+      "marker_shape": "circle",
+      "players": [
+        {
+          "player_id": "CED-01",
+          "team_id": "CED",
+          "number": 1,
+          "name": "T. Achieng",
+          "role": "GK"
+        },
+        {
+          "player_id": "CED-02",
+          "team_id": "CED",
+          "number": 2,
+          "name": "R. Halvorsen",
+          "role": "RB"
+        },
+        {
+          "player_id": "CED-03",
+          "team_id": "CED",
+          "number": 3,
+          "name": "D. Mensah",
+          "role": "LB"
+        },
+        {
+          "player_id": "CED-04",
+          "team_id": "CED",
+          "number": 4,
+          "name": "K. Oduya",
+          "role": "RCB"
+        },
+        {
+          "player_id": "CED-05",
+          "team_id": "CED",
+          "number": 5,
+          "name": "L. Brandt",
+          "role": "LCB"
+        },
+        {
+          "player_id": "CED-06",
+          "team_id": "CED",
+          "number": 6,
+          "name": "S. Kamau",
+          "role": "RCM"
+        },
+        {
+          "player_id": "CED-08",
+          "team_id": "CED",
+          "number": 8,
+          "name": "P. Ferreira",
+          "role": "LCM"
+        },
+        {
+          "player_id": "CED-07",
+          "team_id": "CED",
+          "number": 7,
+          "name": "J. Wanjiru",
+          "role": "RM"
+        },
+        {
+          "player_id": "CED-11",
+          "team_id": "CED",
+          "number": 11,
+          "name": "M. Novak",
+          "role": "LM"
+        },
+        {
+          "player_id": "CED-09",
+          "team_id": "CED",
+          "number": 9,
+          "name": "E. Otieno",
+          "role": "ST"
+        },
+        {
+          "player_id": "CED-10",
+          "team_id": "CED",
+          "number": 10,
+          "name": "A. Lindqvist",
+          "role": "ST"
+        }
+      ]
+    },
+    {
+      "team_id": "HAR",
+      "name": "Harbor FC",
+      "short_name": "HAR",
+      "color": "#e03131",
+      "marker_shape": "square",
+      "players": [
+        {
+          "player_id": "HAR-01",
+          "team_id": "HAR",
+          "number": 1,
+          "name": "B. Castell",
+          "role": "GK"
+        },
+        {
+          "player_id": "HAR-02",
+          "team_id": "HAR",
+          "number": 2,
+          "name": "N. Abara",
+          "role": "RB"
+        },
+        {
+          "player_id": "HAR-03",
+          "team_id": "HAR",
+          "number": 3,
+          "name": "I. Morrow",
+          "role": "LB"
+        },
+        {
+          "player_id": "HAR-04",
+          "team_id": "HAR",
+          "number": 4,
+          "name": "G. Pellerin",
+          "role": "LCB"
+        },
+        {
+          "player_id": "HAR-05",
+          "team_id": "HAR",
+          "number": 5,
+          "name": "O. Nyambura",
+          "role": "RCB"
+        },
+        {
+          "player_id": "HAR-06",
+          "team_id": "HAR",
+          "number": 6,
+          "name": "C. Duarte",
+          "role": "DM"
+        },
+        {
+          "player_id": "HAR-08",
+          "team_id": "HAR",
+          "number": 8,
+          "name": "F. Kiprono",
+          "role": "LCM"
+        },
+        {
+          "player_id": "HAR-10",
+          "team_id": "HAR",
+          "number": 10,
+          "name": "Y. Sato",
+          "role": "RCM"
+        },
+        {
+          "player_id": "HAR-11",
+          "team_id": "HAR",
+          "number": 11,
+          "name": "V. Rossi",
+          "role": "LW"
+        },
+        {
+          "player_id": "HAR-07",
+          "team_id": "HAR",
+          "number": 7,
+          "name": "H. Mbeki",
+          "role": "RW"
+        },
+        {
+          "player_id": "HAR-09",
+          "team_id": "HAR",
+          "number": 9,
+          "name": "W. Grant",
+          "role": "ST"
+        }
+      ]
+    }
+  ],
+  "pitch": {
+    "length_m": 105.0,
+    "width_m": 68.0
+  },
+  "frame_rate_hz": 10.0,
+  "frame_count": 224,
+  "duration_s": 22.3,
+  "period": 2,
+  "match_clock_offset_s": 3792.0,
+  "attacking_directions": [
+    {
+      "team_id": "HAR",
+      "period": 2,
+      "direction": "+x"
+    },
+    {
+      "team_id": "CED",
+      "period": 2,
+      "direction": "-x"
+    }
+  ],
+  "fixture_paths": {
+    "tracking": "tracking.json",
+    "events": "events.json"
+  },
+  "generator_version": "0.1.0",
+  "dataset_hash": "sha256:b59718d340830a810cd0bbee84a31518282e25d31197e973c0461e0ffdebdb63",
+  "availability": "full-tracking",
+  "available_fields": [
+    "player.x",
+    "player.y",
+    "player.vx",
+    "player.vy",
+    "ball.x",
+    "ball.y",
+    "ball.vx",
+    "ball.vy",
+    "ball.possession_player_id"
+  ],
+  "known_limitations": [
+    "Synthetic sequence generated by a rule-based kinematic simulator; not recorded from a real match.",
+    "Ground passes only, at constant ball speed; no aerial play, spin, or deflections.",
+    "Offside is not modelled.",
+    "Player body orientation is not generated.",
+    "Pressure events use a fixed 3 m start / 4 m end distance threshold."
+  ]
+}

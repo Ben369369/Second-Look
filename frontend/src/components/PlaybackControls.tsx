@@ -3,7 +3,7 @@ import { IconChevronLeft, IconChevronRight, IconPlayerPauseFilled, IconPlayerPla
 import type { MatchEvent } from "../api/types";
 import { useStudio } from "../features/studio";
 import { describeEvent, eventTypeLabel, formatClock } from "../replay/model";
-import { SPEEDS } from "../replay/usePlayback";
+import { type Playback, SPEEDS } from "../replay/usePlayback";
 
 const MARKED: ReadonlySet<MatchEvent["type"]> = new Set(["pass", "pressure_start", "shot"]);
 
@@ -83,6 +83,55 @@ export function PlaybackControls({ compact = false }: { compact?: boolean }) {
               </Tooltip>
             ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Minimal transport for a playback that is not the recorded replay (e.g. a simulated rollout). */
+export function PlaybackControlsBare({ playback, duration, clockLabel }: { playback: Playback; duration: number; clockLabel: string }) {
+  const step = 0.1;
+  return (
+    <div className="transport">
+      <Group gap="sm">
+        <ActionIcon.Group>
+          <ActionIcon
+            size="lg"
+            variant="filled"
+            color="teal.7"
+            onClick={playback.toggle}
+            aria-label={playback.playing ? "Pause simulation" : "Play simulation"}
+            data-testid="sim-play"
+          >
+            {playback.playing ? <IconPlayerPauseFilled size={16} /> : <IconPlayerPlayFilled size={16} />}
+          </ActionIcon>
+          <ActionIcon size="lg" variant="default" onClick={() => playback.seek(playback.t - step)} aria-label="Back one step">
+            <IconChevronLeft size={16} />
+          </ActionIcon>
+          <ActionIcon size="lg" variant="default" onClick={() => playback.seek(playback.t + step)} aria-label="Forward one step">
+            <IconChevronRight size={16} />
+          </ActionIcon>
+          <ActionIcon size="lg" variant="default" onClick={playback.reset} aria-label="Restart simulation">
+            <IconPlayerSkipBack size={16} />
+          </ActionIcon>
+        </ActionIcon.Group>
+        <Text ml="auto" fw={700} c="teal.8" className="tabular" data-testid="sim-clock">
+          {clockLabel}
+        </Text>
+      </Group>
+      <div className="scrub sim-scrub">
+        <input
+          type="range"
+          min={0}
+          max={duration}
+          step={step}
+          value={playback.t}
+          onChange={(e) => {
+            playback.pause();
+            playback.seek(Number(e.target.value));
+          }}
+          aria-label="Simulated replay position"
+        />
       </div>
     </div>
   );

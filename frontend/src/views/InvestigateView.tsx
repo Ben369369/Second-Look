@@ -22,7 +22,7 @@ export function InvestigateView({ seed }: { seed?: string }) {
               <Tabs.Tab value="all">All facts {packet ? `(${packet.facts.length})` : ""}</Tabs.Tab>
             </Tabs.List>
             <Tabs.Panel value="answer">
-              <FactList facts={answer?.facts ?? []} refused={answer?.refused} empty="Ask a question to see the evidence behind the answer." />
+              <FactList facts={answer?.facts ?? []} empty="Ask a question to see the evidence behind the answer." />
             </Tabs.Panel>
             <Tabs.Panel value="all">
               <Text fz="sm" c="dimmed" mb="xs">

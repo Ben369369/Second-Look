@@ -1,0 +1,589 @@
+{
+  "summary": {
+    "variants": 12,
+    "expectation_met": 12,
+    "c_offline_investigations": 48,
+    "c_offline_completed": 48,
+    "claims_shown": 156,
+    "claims_failing_revalidation": 0,
+    "adversarial_rejected": 60,
+    "adversarial_injected": 60,
+    "latency_ms_median_all": 2,
+    "latency_ms_median_pressing_with_simulation": 2933,
+    "latency_ms_max": 3064,
+    "pipeline_a_claims": 84,
+    "pipeline_a_invalid": 0,
+    "not_run": {
+      "B": "no live model deployment (Azure 715-123420 hold)",
+      "C-live": "no live model deployment (Azure 715-123420 hold)"
+    }
+  },
+  "c_offline": [
+    {
+      "variant": "ev01",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 2164,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev02",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 1441,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev03",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 1795,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev04",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 6,
+      "challenger_cells": 12,
+      "latency_ms": 2796,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev05",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 2959,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev06",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 2933,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev07",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 3046,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev08",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 3047,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev09",
+      "class": "press_recorded",
+      "outcome": "answered",
+      "claims": 11,
+      "simulated_claims": 4,
+      "tracked_facts": 5,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+      ],
+      "challenger_baseline": "recommend:hold",
+      "challenger_changed": 0,
+      "challenger_cells": 12,
+      "latency_ms": 3064,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev10",
+      "class": "no_press_recorded",
+      "outcome": "insufficient_data",
+      "claims": 0,
+      "simulated_claims": 0,
+      "tracked_facts": 0,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "No press by the right-back is recorded before the data cutoff, so there is no pressing moment to examine yet."
+      ],
+      "challenger_baseline": null,
+      "challenger_changed": null,
+      "challenger_cells": null,
+      "latency_ms": 1,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev11",
+      "class": "no_press_recorded",
+      "outcome": "insufficient_data",
+      "claims": 0,
+      "simulated_claims": 0,
+      "tracked_facts": 0,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "No press by the right-back is recorded before the data cutoff, so there is no pressing moment to examine yet."
+      ],
+      "challenger_baseline": null,
+      "challenger_changed": null,
+      "challenger_cells": null,
+      "latency_ms": 1,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "answered",
+          "claims": 1,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "answered",
+          "claims": 2,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    },
+    {
+      "variant": "ev12",
+      "class": "event_only",
+      "outcome": "answered",
+      "claims": 2,
+      "simulated_claims": 0,
+      "tracked_facts": 0,
+      "invalid_shown": 0,
+      "rejected_internally": 0,
+      "meets_expectation": true,
+      "notes": [
+        "No simulated comparison: frame 103 has no tracking data."
+      ],
+      "challenger_baseline": null,
+      "challenger_changed": null,
+      "challenger_cells": null,
+      "latency_ms": 1,
+      "other_questions": [
+        {
+          "question": "What passing options did Rossi have?",
+          "outcome": "answered",
+          "claims": 0,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How far did Halvorsen run?",
+          "outcome": "insufficient_data",
+          "claims": 0,
+          "invalid_shown": 0,
+          "refused": []
+        },
+        {
+          "question": "How long did Harbor keep the ball?",
+          "outcome": "insufficient_data",
+          "claims": 0,
+          "invalid_shown": 0,
+          "refused": []
+        }
+      ]
+    }
+  ],
+  "pipeline_a": [
+    {
+      "variant": "ev01",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev02",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev03",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev04",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev05",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev06",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev07",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev08",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev09",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev10",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev11",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    },
+    {
+      "variant": "ev12",
+      "claims": 7,
+      "invalid": 0,
+      "addresses_counterfactual": false
+    }
+  ]
+}

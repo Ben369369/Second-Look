@@ -138,6 +138,7 @@ export interface Fact {
   coverage: { availability: Availability; frames_used: number; frames_expected: number; complete: boolean; note: string | null };
   limitations: string[];
   statement: string;
+  plain: string;
 }
 
 export interface RefusedMetric {
@@ -174,4 +175,206 @@ export interface AskResponse {
   refused: RefusedMetric[];
   notes: string[];
   supported_questions: QuestionOption[];
+}
+
+// ---- simulation (evidence class "simulated") ----
+
+export type SimAction = "hold" | "press_earlier" | "press_with_cover";
+export type AttackerPolicy = "patient" | "direct";
+
+export interface CompareRequest {
+  presser_id?: string | null;
+  frame_id?: number | null;
+  cover_delay_s: number;
+  attacker_policy: AttackerPolicy;
+  rollouts?: number;
+  seed?: number;
+}
+
+export interface RateSummary {
+  count: number;
+  n: number;
+  rate: number;
+  ci95: [number, number];
+}
+
+export interface ActionResult {
+  action: SimAction;
+  label: string;
+  danger: RateSummary;
+  regain: RateSummary;
+  retained: RateSummary;
+  median_regain_s: number | null;
+  median_first_pass_s: number | null;
+}
+
+export interface PairedDiff {
+  metric: "danger" | "regain";
+  better: SimAction;
+  other: SimAction;
+  diff: number;
+  ci95: [number, number];
+}
+
+export interface Recommendation {
+  status: "recommend" | "no_clear_winner" | "inconclusive";
+  action: SimAction | null;
+  rule: string;
+  reasons: string[];
+}
+
+export interface SimFrame {
+  t: number;
+  ball: Position;
+  holder: string | null;
+  players: { player_id: string; x: number; y: number }[];
+}
+
+export interface SampleRollout {
+  action: SimAction;
+  rollout_index: number;
+  outcome: "danger" | "regain" | "neither";
+  frames: SimFrame[];
+  events: { t: number; kind: string; from_id: string | null; to_id: string }[];
+}
+
+export interface BranchInfo {
+  frame_id: number;
+  time_s: number;
+  carrier: string;
+  presser: string;
+  cover: string;
+  inside_option: string;
+  overlap_runner: string | null;
+  striker: string;
+}
+
+export interface ComparisonResult {
+  run_id: string;
+  scenario_id: string;
+  dataset_hash: string;
+  evidence_class: "simulated";
+  policy_version: string;
+  branch: BranchInfo;
+  config: { cover_delay_s: number; attacker_policy: AttackerPolicy; rollouts: number; seed: number; horizon_s: number; execution_noise: number };
+  actions: ActionResult[];
+  diffs: PairedDiff[];
+  recommendation: Recommendation;
+  samples: SampleRollout[];
+  assumptions: string[];
+  compute_ms: number;
+  cached: boolean;
+}
+
+export interface ChallengeCell {
+  cover_delay_s: number;
+  attacker_policy: AttackerPolicy;
+  status: Recommendation["status"];
+  action: SimAction | null;
+  danger: Record<string, number>;
+  regain: Record<string, number>;
+}
+
+export interface ChallengeResult {
+  run_id: string;
+  scenario_id: string;
+  evidence_class: "simulated";
+  policy_version: string;
+  rollouts_per_action: number;
+  baseline: ChallengeCell;
+  cells: ChallengeCell[];
+  changed: ChallengeCell[];
+  tested_domain: string;
+  conclusion: string;
+  compute_ms: number;
+}
+
+// ---- investigations (agent workflow) ----
+
+export type ClaimType = "observed" | "estimated" | "simulated" | "interpretation" | "insufficient_data";
+
+export interface Claim {
+  claim_type: ClaimType;
+  text: string;
+  fact_ids: string[];
+}
+
+export interface TraceStep {
+  agent: string;
+  kind: "model" | "tool" | "validation" | "repair" | "fallback" | "error" | "rule";
+  summary: string;
+  tool: string | null;
+  duration_ms: number;
+}
+
+export interface InvestigationState {
+  investigation_id: string;
+  scenario_id: string;
+  dataset_hash: string;
+  cursor_s: number;
+  question: string;
+  audience: "casual" | "analyst";
+  status: "queued" | "planning" | "evidence" | "challenging" | "producing" | "validating" | "complete" | "failed";
+  outcome: "answered" | "unsupported" | "clarify" | "insufficient_data" | null;
+  provider_mode: "offline" | "foundry" | "fallback";
+  provider_label: string;
+  model_deployment: string | null;
+  intent: string | null;
+  intent_label: string | null;
+  plan_summary: string | null;
+  facts: Fact[];
+  simulation_run_ids: string[];
+  challenge_summary: string | null;
+  claims: Claim[];
+  rejected_claims: { claim: Claim; errors: string[] }[];
+  notes: string[];
+  errors: string[];
+  trace: TraceStep[];
+  model_calls: number;
+  tool_calls: number;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  elapsed_ms: number;
+}
+
+// ---- recap and overlay export ----
+
+export interface OverlayCue {
+  schema_version: string;
+  cue_id: string;
+  source_run_id: string;
+  scenario_hash: string;
+  timebase: "sequence_s";
+  branch: "recorded" | "simulated";
+  start_s: number;
+  duration_s: number;
+  graphic_type: "player_spotlight" | "event_comparison" | "tradeoff_card" | "insufficient_data_card";
+  title: string;
+  body: string;
+  language: string;
+  audience: "casual" | "analyst";
+  highlighted_player_ids: string[];
+  fact_ids: string[];
+  simulation_run_ids: string[];
+  evidence_class: EvidenceClass | "interpretation";
+  assumptions_summary: string | null;
+  status: "approved";
+}
+
+export interface ExportBundle {
+  schema_version: string;
+  investigation_id: string;
+  scenario_id: string;
+  scenario_hash: string;
+  question: string;
+  audience: "casual" | "analyst";
+  provider_mode: "offline" | "foundry" | "fallback";
+  provider_label: string;
+  timebase: "sequence_s";
+  sequence_duration_s: number;
+  playback_rate: number;
+  recap_duration_s: number;
+  insights: { order: number; claims: Claim[]; cue_id: string }[];
+  cues: OverlayCue[];
+  synthetic_data: true;
 }

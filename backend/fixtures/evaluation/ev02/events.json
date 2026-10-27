@@ -1,0 +1,567 @@
+[
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-05",
+  "time_s": 0.0,
+  "start_position": {
+   "x": 28.42,
+   "y": 24.58
+  },
+  "end_position": {
+   "x": 30.01,
+   "y": 26.01
+  },
+  "related_frame_ids": [
+   0,
+   13
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "ev02-e000",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-05",
+  "recipient_id": "HAR-06",
+  "time_s": 1.3,
+  "start_position": {
+   "x": 30.51,
+   "y": 26.01
+  },
+  "end_position": {
+   "x": 38.56,
+   "y": 32.02
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   13,
+   22
+  ],
+  "event_id": "ev02-e001",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-06",
+  "time_s": 2.2,
+  "start_position": {
+   "x": 38.56,
+   "y": 32.02
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   22
+  ],
+  "event_id": "ev02-e002",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-06",
+  "time_s": 2.2,
+  "start_position": {
+   "x": 38.06,
+   "y": 32.05
+  },
+  "end_position": {
+   "x": 40.24,
+   "y": 34.49
+  },
+  "related_frame_ids": [
+   22,
+   33
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "ev02-e003",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-06",
+  "recipient_id": "HAR-04",
+  "time_s": 3.3,
+  "start_position": {
+   "x": 40.74,
+   "y": 34.49
+  },
+  "end_position": {
+   "x": 32.04,
+   "y": 45.24
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   33,
+   46
+  ],
+  "event_id": "ev02-e004",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-04",
+  "time_s": 4.6,
+  "start_position": {
+   "x": 32.04,
+   "y": 45.24
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   46
+  ],
+  "event_id": "ev02-e005",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-04",
+  "time_s": 4.6,
+  "start_position": {
+   "x": 31.69,
+   "y": 45.1
+  },
+  "end_position": {
+   "x": 34.01,
+   "y": 46.0
+  },
+  "related_frame_ids": [
+   46,
+   57
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "ev02-e006",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-04",
+  "recipient_id": "HAR-03",
+  "time_s": 5.7,
+  "start_position": {
+   "x": 34.51,
+   "y": 46.0
+  },
+  "end_position": {
+   "x": 39.88,
+   "y": 59.1
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   57,
+   76
+  ],
+  "event_id": "ev02-e007",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-03",
+  "time_s": 7.6,
+  "start_position": {
+   "x": 39.88,
+   "y": 59.1
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   76
+  ],
+  "event_id": "ev02-e008",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-03",
+  "time_s": 7.6,
+  "start_position": {
+   "x": 39.27,
+   "y": 59.47
+  },
+  "end_position": {
+   "x": 47.02,
+   "y": 61.51
+  },
+  "related_frame_ids": [
+   76,
+   101
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "ev02-e009",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-03",
+  "recipient_id": "HAR-11",
+  "time_s": 10.1,
+  "start_position": {
+   "x": 47.52,
+   "y": 61.51
+  },
+  "end_position": {
+   "x": 57.68,
+   "y": 63.61
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   101,
+   115
+  ],
+  "event_id": "ev02-e010",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-11",
+  "time_s": 11.5,
+  "start_position": {
+   "x": 57.68,
+   "y": 63.61
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   115
+  ],
+  "event_id": "ev02-e011",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-11",
+  "time_s": 11.5,
+  "start_position": {
+   "x": 58.47,
+   "y": 63.95
+  },
+  "end_position": {
+   "x": 61.86,
+   "y": 60.54
+  },
+  "related_frame_ids": [
+   115,
+   138
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "ev02-e012",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pressure_start",
+  "team_id": "CED",
+  "player_id": "CED-02",
+  "time_s": 13.3,
+  "start_position": {
+   "x": 62.64,
+   "y": 58.65
+  },
+  "related_player_ids": [
+   "HAR-11"
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_frame_ids": [
+   133
+  ],
+  "event_id": "ev02-e013",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pressure_end",
+  "team_id": "CED",
+  "player_id": "CED-02",
+  "time_s": 13.8,
+  "start_position": {
+   "x": 62.05,
+   "y": 59.32
+  },
+  "related_player_ids": [
+   "HAR-11"
+  ],
+  "related_frame_ids": [
+   133,
+   138
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "event_id": "ev02-e014",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-11",
+  "recipient_id": "HAR-08",
+  "time_s": 13.8,
+  "start_position": {
+   "x": 62.36,
+   "y": 60.54
+  },
+  "end_position": {
+   "x": 64.52,
+   "y": 48.25
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   138,
+   147
+  ],
+  "event_id": "ev02-e015",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-08",
+  "time_s": 14.7,
+  "start_position": {
+   "x": 64.52,
+   "y": 48.25
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   147
+  ],
+  "event_id": "ev02-e016",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-08",
+  "time_s": 14.7,
+  "start_position": {
+   "x": 64.52,
+   "y": 48.17
+  },
+  "end_position": {
+   "x": 69.78,
+   "y": 44.89
+  },
+  "related_frame_ids": [
+   147,
+   164
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "ev02-e017",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pressure_start",
+  "team_id": "CED",
+  "player_id": "CED-06",
+  "time_s": 16.3,
+  "start_position": {
+   "x": 72.24,
+   "y": 45.03
+  },
+  "related_player_ids": [
+   "HAR-08"
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_frame_ids": [
+   163
+  ],
+  "event_id": "ev02-e018",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pressure_end",
+  "team_id": "CED",
+  "player_id": "CED-06",
+  "time_s": 16.4,
+  "start_position": {
+   "x": 71.87,
+   "y": 44.99
+  },
+  "related_player_ids": [
+   "HAR-08"
+  ],
+  "related_frame_ids": [
+   163,
+   164
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "event_id": "ev02-e019",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pass",
+  "team_id": "HAR",
+  "player_id": "HAR-08",
+  "recipient_id": "HAR-09",
+  "time_s": 16.4,
+  "start_position": {
+   "x": 70.28,
+   "y": 44.89
+  },
+  "end_position": {
+   "x": 86.56,
+   "y": 37.67
+  },
+  "outcome": "complete",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   164,
+   176
+  ],
+  "event_id": "ev02-e020",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "reception",
+  "team_id": "HAR",
+  "player_id": "HAR-09",
+  "time_s": 17.6,
+  "start_position": {
+   "x": 86.56,
+   "y": 37.67
+  },
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "related_frame_ids": [
+   176
+  ],
+  "event_id": "ev02-e021",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pressure_start",
+  "team_id": "CED",
+  "player_id": "CED-04",
+  "time_s": 17.6,
+  "start_position": {
+   "x": 87.34,
+   "y": 35.94
+  },
+  "related_player_ids": [
+   "HAR-09"
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "related_frame_ids": [
+   176
+  ],
+  "event_id": "ev02-e022",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "carry",
+  "team_id": "HAR",
+  "player_id": "HAR-09",
+  "time_s": 17.6,
+  "start_position": {
+   "x": 86.58,
+   "y": 37.68
+  },
+  "end_position": {
+   "x": 89.14,
+   "y": 36.58
+  },
+  "related_frame_ids": [
+   176,
+   187
+  ],
+  "recipient_id": null,
+  "outcome": null,
+  "related_player_ids": [],
+  "event_id": "ev02-e023",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "pressure_end",
+  "team_id": "CED",
+  "player_id": "CED-04",
+  "time_s": 18.7,
+  "start_position": {
+   "x": 89.66,
+   "y": 38.2
+  },
+  "related_player_ids": [
+   "HAR-09"
+  ],
+  "related_frame_ids": [
+   176,
+   187
+  ],
+  "recipient_id": null,
+  "end_position": null,
+  "outcome": null,
+  "event_id": "ev02-e024",
+  "scenario_id": "ev02"
+ },
+ {
+  "type": "shot",
+  "team_id": "HAR",
+  "player_id": "HAR-09",
+  "time_s": 18.7,
+  "start_position": {
+   "x": 89.64,
+   "y": 36.58
+  },
+  "end_position": {
+   "x": 100.7,
+   "y": 35.51
+  },
+  "recipient_id": null,
+  "outcome": "saved",
+  "related_player_ids": [],
+  "related_frame_ids": [
+   187,
+   193
+  ],
+  "event_id": "ev02-e025",
+  "scenario_id": "ev02"
+ }
+]

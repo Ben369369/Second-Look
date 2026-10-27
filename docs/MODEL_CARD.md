@@ -44,3 +44,59 @@ In offline mode, questions are routed by fixed keyword rules (`backend/app/inves
 ## Data cutoff
 
 Every answer is computed from a cutoff view (`backend/app/metrics/view.py`). Frames after the cutoff are dropped. Passes and shots that complete after the cutoff lose their outcome and end position, and unfinished carries lose their end. Tests check that no fact references a later event or frame.
+
+## Simulated: short-horizon intervention model (`rules/1`)
+
+Code: `backend/app/simulation/engine.py` (rollouts), `compare.py` (decision rule, challenger), `stats.py` (intervals).
+
+**What it answers.** Starting from a recorded frame, what tends to happen in the next 8 s if the defending presser **holds** (contains about 6 m goal-side), **presses earlier** (starts closing 0.3 s after the branch), or **presses with cover** (presses earlier while a designated teammate screens the midpoint of the carrier → inside-option lane after a *cover delay*)?
+
+**Branch.** The default branch is the first frame after the pass that triggered the recorded press is released; for the hero sequence, frame 101 at 63:22. The pass's intended receiver is the passing team's outfielder closest to the ball's observed direction of travel. Only that frame (positions, velocities, ball velocity) and earlier possession are read. A test corrupts every later frame and confirms identical results.
+
+**Roles from geometry, not names.**
+- *Inside option:* the most advanced teammate within 25 m who is more central than the carrier.
+- *Overlap runner:* the nearest same-flank teammate behind the ball.
+- *Striker:* the most advanced other teammate.
+- *Cover:* the defending midfielder or defender (forwards excluded) nearest the inside option.
+- Team-shape anchors are inferred from the branch positions.
+
+**Behaviour.**
+- **Movement:** steering with 4.5 m/s² acceleration, top speed 7.5 m/s (carrier 6 m/s, goalkeepers 6 m/s).
+- **Carrier decisions:** every 0.3 s (after holding at least 0.5 s), the carrier picks pass to any teammate, carry, or hold.
+  - Option value = (1 − risk) × gain − risk × loss cost. Gain combines progress, dangerous-zone value and receiver space.
+  - Risk combines lane interception (lane-access margin through a logistic curve: margin 0 gives 30%, +0.1 s gives 70%) and misplacement (pressure-dependent perpendicular error beyond 1.6 m).
+  - The choice is made by Gumbel-max sampling. "Patient" and "direct" attackers differ in gain weights and loss cost.
+- **Passes:** played at 14 m/s, leading the receiver by up to 6 m. The intended receiver controls an arriving ball within 2 m; otherwise it is loose.
+- **Defending:** the nearest outfield defender closes a new carrier after 0.4 s. A defender within 1 m wins a tackle with 7% chance per 0.1 s.
+- **Support play:** the inside option and striker take the nearby spot furthest from defenders. The overlap starts when the presser engages (closer than 4 m).
+
+**Outcomes per rollout.**
+- *Dangerous possession:* the attacking team controls the ball within 30 m of goal and inside penalty-area width.
+- *Regain:* the defending team controls the ball.
+- *Retained:* the attacking team still has it at 8 s.
+
+**Randomness and pairing.** Draws are keyed by (seed, step, rollout, player), so all three actions use identical random conditions. Differences are measured on paired trials.
+
+**Statistics.**
+- Wilson 95% intervals for single rates; 95% paired percentile bootstrap (2,000 resamples) for differences.
+- These describe Monte Carlo sampling uncertainty only, not whether the model represents football well.
+
+**Decision rule (fixed before running).** Recommend an action only if its dangerous-possession rate is at least 5 points below every other action's, with each paired 95% interval excluding zero, from at least 64 rollouts per action. Otherwise: "no clear winner" (or "inconclusive" below 64 rollouts). Regain rates stay visible as a secondary outcome.
+
+**Challenger.** A fixed grid: cover delay {0, 0.3, 0.6, 0.9, 1.2, 1.8} s × attacker policy {patient, direct}, 128 rollouts per action. It reports every setting where the finding differs from the user's current setting, plus a tally. Finding a change shows the answer is not robust across the grid; finding none would not prove robustness beyond it.
+
+**How it was calibrated, honestly.** The constants were hand-set during development. The targets were face validity on this sequence: passes usually reach their receivers, carriers don't run into defenders, and an unpressured winger usually finds the inside option. Calibration problems found and fixed through diagnostics:
+- Long passes were nearly always intercepted. The choice rule became expected-value based and the interception curve was recalibrated.
+- Carriers dribbled into defenders. Avoidance was added.
+- Passes aimed at receivers' current positions were collected by opponents (122 of 238 under "hold"). Passes now lead the receiver and the intended receiver gets first-touch priority.
+- The cover could never arrive when branching at the reception (13.6 m away against a pass about 1.4 s later). The branch moved to the pass trigger, and the cover now screens the lane instead of marking goal-side.
+
+No constant was tuned to produce a particular recommendation, but the model has **not** been validated against real football. Results on the hero sequence at default assumptions (patient, cover delay 0.6 s, 200 rollouts):
+
+| Choice | Dangerous possession | Regain |
+|---|---|---|
+| Hold | 30/200 (15%) | 80/200 (40%) |
+| Press earlier | 71/200 (36%) | 66/200 (33%) |
+| Press with cover | 37/200 (19%) | 94/200 (47%) |
+
+Rule outcome: no clear winner. Hold vs press with cover differs by 3.5 points (interval −4.0 to +10.5). Press earlier is clearly worse than hold (+20.5 points, interval 12.5 to 28.5).

@@ -1,4 +1,16 @@
-import type { AskResponse, Capabilities, FactPacket, QuestionOption, ReplayBundle, ScenarioSummary } from "./types";
+import type {
+  AskResponse,
+  Capabilities,
+  ChallengeResult,
+  CompareRequest,
+  ComparisonResult,
+  ExportBundle,
+  FactPacket,
+  InvestigationState,
+  QuestionOption,
+  ReplayBundle,
+  ScenarioSummary,
+} from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -36,6 +48,31 @@ export const api = {
     request<FactPacket>(`/api/scenarios/${sid(id)}/facts${cursorS === null ? "" : `?cursor_s=${cursorS.toFixed(2)}`}`, {
       signal,
     }),
+  compare: (id: string, body: CompareRequest, signal?: AbortSignal) =>
+    request<ComparisonResult>(`/api/scenarios/${sid(id)}/compare`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    }),
+  challenge: (id: string, body: { baseline_cover_delay_s: number; baseline_attacker_policy: string }, signal?: AbortSignal) =>
+    request<ChallengeResult>(`/api/scenarios/${sid(id)}/challenge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal,
+    }),
+  startInvestigation: (id: string, question: string, cursorS: number | null, audience: "casual" | "analyst", signal?: AbortSignal) =>
+    request<InvestigationState>(`/api/investigations?scenario_id=${sid(id)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, cursor_s: cursorS, audience }),
+      signal,
+    }),
+  getInvestigation: (investigationId: string, signal?: AbortSignal) =>
+    request<InvestigationState>(`/api/investigations/${encodeURIComponent(investigationId)}`, { signal }),
+  exportInvestigation: (investigationId: string, signal?: AbortSignal) =>
+    request<ExportBundle>(`/api/investigations/${encodeURIComponent(investigationId)}/export`, { signal }),
   ask: (id: string, question: string, cursorS: number | null, signal?: AbortSignal) =>
     request<AskResponse>(`/api/scenarios/${sid(id)}/ask`, {
       method: "POST",

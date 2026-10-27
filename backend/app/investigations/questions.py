@@ -10,9 +10,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from app.metrics.facts import FactBuilder
+from app.metrics.facts import FactBuilder, simulated_facts, with_plain
 from app.metrics.view import SequenceView
-from app.schemas import AnswerSentence, AskResponse, Fact, MatchEvent, QuestionOption
+from app.schemas import AnswerSentence, AskResponse, CompareRequest, Fact, MatchEvent, QuestionOption, ReplayBundle
+from app.simulation.compare import LABELS as SIM_LABELS
+from app.simulation.compare import compare
+from app.simulation.engine import BranchError
 
 CATALOGUE: list[QuestionOption] = [
     QuestionOption(intent="press_timing", label="Pressing decision", example="Should the right-back have pressed earlier?"),
@@ -102,6 +105,8 @@ class Answer:
         self.notes: list[str] = []
 
     def add(self, fact: Fact | None) -> Fact | None:
+        if fact is not None and not fact.plain:
+            fact = with_plain(self.v, [fact])[0]
         if fact is not None and fact.fact_id not in {f.fact_id for f in self.facts}:
             self.facts.append(fact)
         return fact
@@ -148,6 +153,7 @@ def answer_press_timing(a: Answer, r: Route) -> str:
     nxt = next((e for e in v.events if e.type in ("pass", "shot") and e.player_id == target and e.time_s >= press.time_s), None)
     if nxt is None:
         a.notes.append("What the pressed player did next is after the data cutoff.")
+        _add_simulation(a, presser)
         return "answered"
     if nxt.type == "pass" and nxt.recipient_id:
         a.say(a.add(a.b.defender_distance(presser, target, nxt.time_s, "as the ball was released", nxt)))
@@ -157,11 +163,38 @@ def answer_press_timing(a: Answer, r: Route) -> str:
     spells = [f for f in a.b.possession_duration(v.team_of(target)) if f.time_window.start_s <= nxt.time_s <= f.time_window.end_s]
     for f in spells:
         a.say(a.add(f))
-    a.notes.append(
-        "These are recorded facts and heuristic estimates only. Whether pressing earlier would have been better "
-        "is a counterfactual: it needs the scenario simulator (hold / press earlier / press with cover), which is not built yet."
-    )
+    _add_simulation(a, presser)
     return "answered"
+
+
+def _add_simulation(a: Answer, presser: str) -> None:
+    """Counterfactual part: the default-assumption comparison from the pass that triggered the press.
+
+    The simulator reads only the branch frame, which is within the cutoff, so this
+    respects the same data cutoff as the observed facts.
+    """
+    v = a.v
+    bundle = ReplayBundle(manifest=v.manifest, frames=v.frames, events=v.events)
+    try:
+        result = compare(bundle, CompareRequest(presser_id=presser))
+    except BranchError as exc:
+        a.notes.append(f"No simulated comparison: {exc}.")
+        return
+    facts = [a.add(f) for f in simulated_facts(v, result)]
+    for f in facts:
+        a.say(f)
+    rec = result.recommendation
+    verdict = (
+        f"Under the predeclared decision rule, the simulations favour '{SIM_LABELS[rec.action].lower()}'."
+        if rec.status == "recommend" and rec.action
+        else "Under the predeclared decision rule, no choice is clearly best in these simulations."
+    )
+    a.sentences.append(AnswerSentence(text=verdict, fact_ids=[f.fact_id for f in facts if f is not None]))
+    a.notes.append(
+        f"Simulated results come from a rule-based model ({result.policy_version}, {result.config.rollouts} rollouts per choice, "
+        f"cover delay {result.config.cover_delay_s} s, {result.config.attacker_policy} attackers). They are counts inside the simulator, "
+        "not real-world probabilities. Change the assumptions on the What if? page."
+    )
 
 
 def answer_passing_options(a: Answer, r: Route) -> str:

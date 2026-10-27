@@ -1,0 +1,98 @@
+{
+  "ev01": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 23,
+    "rb_press_delay_s": 1.4,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev02": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 41,
+    "rb_press_delay_s": 1.4,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev03": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 67,
+    "rb_press_delay_s": 1.4,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev04": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 97,
+    "rb_press_delay_s": 1.4,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev05": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 11,
+    "rb_press_delay_s": 0.4,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev06": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 53,
+    "rb_press_delay_s": 0.4,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev07": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 79,
+    "rb_press_delay_s": 0.4,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev08": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 23,
+    "rb_press_delay_s": 0.6,
+    "cover_delay_s": 0.3,
+    "event_only": false
+  },
+  "ev09": {
+    "class": "press_recorded",
+    "expected": "Answer the pressing question with observed, estimated and simulated facts; the simulated finding follows the predeclared rule.",
+    "seed": 67,
+    "rb_press_delay_s": 0.6,
+    "cover_delay_s": 0.3,
+    "event_only": false
+  },
+  "ev10": {
+    "class": "no_press_recorded",
+    "expected": "Abstain on the pressing question (no pressing moment exists); no simulated claims.",
+    "seed": 11,
+    "rb_press_delay_s": 2.2,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev11": {
+    "class": "no_press_recorded",
+    "expected": "Abstain on the pressing question (no pressing moment exists); no simulated claims.",
+    "seed": 97,
+    "rb_press_delay_s": 2.2,
+    "cover_delay_s": null,
+    "event_only": false
+  },
+  "ev12": {
+    "class": "event_only",
+    "expected": "Refuse tracked and spatial metrics and the simulation; event-based facts only; no simulated claims.",
+    "seed": 53,
+    "rb_press_delay_s": 1.4,
+    "cover_delay_s": null,
+    "event_only": true
+  }
+}

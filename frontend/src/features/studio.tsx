@@ -1,12 +1,13 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
-import type { AskResponse, Fact, FactPacket, MatchEvent, QuestionOption, ReplayBundle } from "../api/types";
+import type { Fact, FactPacket, InvestigationState, MatchEvent, QuestionOption, ReplayBundle } from "../api/types";
 import { buildLookup, eventPlayers, type Lookup } from "../replay/model";
 import type { Annotation } from "../replay/PitchCanvas";
 import { type Playback, usePlayback } from "../replay/usePlayback";
 import { factAnnotation } from "./evidence";
 
 export type CutoffMode = "sequence" | "replay";
+export type Audience = "casual" | "analyst";
 export type Selection =
   | { kind: "fact"; fact: Fact }
   | { kind: "event"; event: MatchEvent }
@@ -26,12 +27,14 @@ interface Studio {
   selectPlayer: (id: string | null) => void;
   clearSelection: () => void;
   questions: QuestionOption[];
-  answer: AskResponse | null;
+  answer: InvestigationState | null;
   askPending: boolean;
   askError: string | null;
   ask: (q: string) => void;
   cutoffMode: CutoffMode;
   setCutoffMode: (m: CutoffMode) => void;
+  audience: Audience;
+  setAudience: (a: Audience) => void;
   packet: FactPacket | null;
   showGrid: boolean;
   setShowGrid: (v: boolean) => void;
@@ -52,10 +55,12 @@ export function StudioProvider(props: { bundle: ReplayBundle; scenarioId: string
   const lookup = useMemo(() => buildLookup(bundle), [bundle]);
   const raw = usePlayback(bundle.manifest.duration_s);
   const [selection, setSelection] = useState<Selection>(null);
-  const [answer, setAnswer] = useState<AskResponse | null>(null);
+  const [answer, setAnswer] = useState<InvestigationState | null>(null);
   const [askPending, setAskPending] = useState(false);
   const [askError, setAskError] = useState<string | null>(null);
   const [cutoffMode, setCutoffMode] = useState<CutoffMode>("sequence");
+  const [audience, setAudienceState] = useState<Audience>("analyst");
+  const audienceRef = useRef<Audience>("analyst");
   const [packet, setPacket] = useState<FactPacket | null>(null);
   const [showGrid, setShowGrid] = useState(false);
   const askCtl = useRef<AbortController | null>(null);
@@ -82,8 +87,22 @@ export function StudioProvider(props: { bundle: ReplayBundle; scenarioId: string
       askCtl.current = ctl;
       setAskPending(true);
       setAskError(null);
+      const done = (s: InvestigationState) => s.status === "complete" || s.status === "failed";
+      const poll = async (s: InvestigationState): Promise<InvestigationState> => {
+        // Model-backed investigations run in the background; poll until finished (bounded).
+        const until = Date.now() + 75_000;
+        let cur = s;
+        while (!done(cur) && Date.now() < until) {
+          setAnswer(cur);
+          await new Promise((r) => setTimeout(r, 800));
+          if (ctl.signal.aborted) throw new DOMException("aborted", "AbortError");
+          cur = await api.getInvestigation(cur.investigation_id, ctl.signal);
+        }
+        return cur;
+      };
       api
-        .ask(scenarioId, q, cutoffMode === "replay" ? rawRef.current.t : null, ctl.signal)
+        .startInvestigation(scenarioId, q, cutoffMode === "replay" ? rawRef.current.t : null, audienceRef.current, ctl.signal)
+        .then(poll)
         .then((res) => {
           setAnswer(res);
           setSelection(null);
@@ -92,6 +111,18 @@ export function StudioProvider(props: { bundle: ReplayBundle; scenarioId: string
         .finally(() => askCtl.current === ctl && setAskPending(false));
     },
     [scenarioId, cutoffMode],
+  );
+
+  // Switching audience re-asks the same question: same facts, different presentation.
+  const answerRef = useRef<InvestigationState | null>(null);
+  answerRef.current = answer;
+  const setAudience = useCallback(
+    (a: Audience) => {
+      audienceRef.current = a;
+      setAudienceState(a);
+      if (answerRef.current) ask(answerRef.current.question);
+    },
+    [ask],
   );
 
   const selectFact = useCallback((f: Fact) => {
@@ -162,6 +193,8 @@ export function StudioProvider(props: { bundle: ReplayBundle; scenarioId: string
     ask,
     cutoffMode,
     setCutoffMode,
+    audience,
+    setAudience,
     packet,
     showGrid,
     setShowGrid,

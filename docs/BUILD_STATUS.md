@@ -4,6 +4,9 @@ _Last updated: 2026-10-25_
 
 ## Current milestone
 
+**26 Oct: Stages 3 and 4 complete; Stage 5 built and tested against the real Agent Framework loop with scripted model replies.** The Stage 5 acceptance gate (real Foundry tool calls) is **not yet verified**: it needs Benedict's Foundry project endpoint, deployment name and `az login`. Held-out variants for the Stage 4 "held-out" gate are scheduled with the Stage 7 evaluation.
+
+Earlier: 
 **Stage 2 complete; UI rebuilt as a light Chui Labs dashboard.** Acceptance gate verified: independently checked facts seek to the correct frames, both in pytest and in a real browser. Stage 3 (responsive short simulation, three interventions) has not started.
 
 ## Implemented and verified
@@ -41,14 +44,49 @@ _Last updated: 2026-10-25_
 - Methods page drawn from the model card and the manifest.
 - Shared studio state, so every page drives the same replay.
 
+**Stages 3–4 (26 Oct):**
+- `backend/app/simulation/`: vectorised rule-based rollouts (`rules/1`), branching at the pass that triggered the press, three interventions, common random numbers, Wilson and paired-bootstrap intervals, the predeclared decision rule, a challenger grid with reuse of runs that don't depend on cover delay (about 10 s), and an LRU cache.
+- `POST /api/scenarios/{id}/compare` (200 rollouts, about 3 s cold, about 20 ms cached) and `POST /api/scenarios/{id}/challenge`.
+- The pressing answer now adds three SIMULATED facts plus the rule's verdict.
+- What-if page: cover-delay slider and attacker-policy control with pending/stale state and aborted late requests; action cards with counts and 95% intervals; a recommendation card with the rule text; a simulated replay with a dashed SIMULATED frame and recorded "ghost" positions; the stress-test grid with a tally conclusion; an assumptions accordion.
+- Tests (`tests/test_simulation.py`, 11): branch and roles; reproducibility; identical starting state; no teleporting; the carrier's choices change under a press; cover delay acts only through the cover player (a never-arriving cover reproduces press-earlier exactly); recorded future never read; rates equal counts; Wilson and bootstrap sanity; rule inconclusive below 64 rollouts; challenger bounds and a no-clear-winner case. Plus a browser test of the What-if page.
+
+**Stage 5 (26 Oct, code complete, live model pending):**
+- `backend/app/agents/`: four `agent_framework.Agent` roles (planner, evidence analyst, challenger, producer) with distinct tools and typed structured outputs.
+- Deterministic claim validator with one repair round, and one repair for malformed output.
+- 2 retries for transient errors, a 60 s budget, `FunctionInvocationConfiguration` caps, and an offline/fallback pipeline with labels.
+- `POST /api/investigations` and `GET /api/investigations/{id}` (in-process registry; runs within the request on Vercel).
+- UI: typed claim badges, a provider badge (Rule-matched / AI agents / Fallback), and a "How this answer was made" trace listing model calls, tool calls, validation, rejected claims and errors.
+- Tests (`tests/test_agents.py`): 8 run against a scripted chat client built on the framework's `BaseChatClient` + `FunctionInvocationLayer`. One live Foundry test is **skipped** until credentials exist.
+- `docs/ARCHITECTURE.md` added.
+
+**Stage 6 (27 Oct, complete, verified locally and in production):**
+- Every fact now has a code-rendered `plain` sentence built from the same value.
+- Investigations take `audience: casual | analyst`. Casual mode gives one finding, the comparison, the trade-off, what happened, and a caveat, all from the same facts and through the same validator. The producer prompt gets the plain sentences in Foundry mode.
+- `GET /api/investigations/{id}/export` returns `ExportBundle` (`overlay/1`): 2–4 insights, `OverlayCue`s with every spec field plus `timebase: sequence_s`, `branch`, a 0.5× playback rate and a 43.8 s recap.
+- `validate_export` rejects timing outside the sequence, overlaps, recorded cues not on screen at their fact's moment, unknown facts/runs/players, simulated cues without a SIMULATION label, and any text that isn't approved claims.
+- UI: a Fan/Analyst switch (re-asks the question), a casual layout with plain evidence labels, and a Recap & overlay page (cues overlaid on the replay, a cue timeline, half-speed play, JSON download).
+- Tests: `tests/test_exports.py` (6) and `e2e/recap.spec.ts` (2). The recap e2e test checks that seeking into each exported cue's window shows exactly that cue.
+- Known limit: on Vercel the in-memory investigation registry is per instance, so a follow-up request (poll or export) landing on another instance would get 404. Fine for a single-viewer demo; shared storage would be needed for real use.
+
+**Stage 7 (27 Oct, complete):**
+- 12 held-out fixtures with predeclared expectations. Event-only fixtures are supported by the validator and generator.
+- `scripts/evaluate.py` writes `docs/EVALUATION.md` and `docs/evaluation_results.json`.
+- Results: expectation met in 12/12 variants (including 2 correct abstentions with no press, and event-only refusing tracked and simulated claims); 48/48 investigations completed; 0/156 shown claims fail re-validation; 60/60 injected fabrications rejected.
+- The challenger finds a baseline-changing setting on 1 of 9 press variants (ev04, 6/12 cells).
+- Pipelines B and C-live were not run (no model deployment).
+- This also covers the Stage 4 "held-out variant" gate: ev10/ev11 withhold the pressing finding, and ev12 withholds spatial and simulated claims.
+
+**Stage 8 (27 Oct, docs done; video and submission are Benedict's):** README rewritten to match delivered functionality; `docs/DEMO_SCRIPT.md` (110 s) and `docs/SUBMISSION.md` (paste-ready description, honest Microsoft-technology table, checklist) added. The DATA_CARD now covers the evaluation fixtures.
+
 ## Checks run and results
 
 | Check | Command | Result |
 |---|---|---|
-| Backend tests | `backend: .venv/Scripts/python.exe -m pytest -q` | 51 passed |
+| Backend tests | `backend: .venv/Scripts/python.exe -m pytest -q` | 77 passed, 1 skipped (live Foundry test, no model deployment available) — 27 Oct |
 | Type-check + build | `frontend: npm run build` | passed |
 | Frontend unit tests | `frontend: npm test` | 5 passed |
-| Browser E2E (Edge) | `frontend: npm run e2e` | 8 passed (adds: stat card seeks, chart click seeks, header search, players page, methods page) |
+| Browser E2E (Edge) | `frontend: npm run e2e` | 11 passed locally and 11 passed against production (adds the Fan/Analyst and recap-overlay checks) — 27 Oct |
 | Visual review | screenshots at 1440×900, 1280×720, 390×844 | reviewed; fixed line labels hidden under name tags, over-dimmed players, truncated ratio values |
 
 The Stage 2 tests cover:
@@ -94,9 +132,34 @@ Not checked: real screen readers, contrast measurement, and browsers other than 
 Previously: 
 Offline only. No Azure resources created and no credentials configured. Nothing is deployed or published. Hosting discussion: Vercel would suit only a replay-only build; the full app targets one container (Stage 8).
 
+## Plan to deadline (27 Oct 2026, 11:59 pm PT)
+
+**26 Oct (today):**
+- **A. Stage 3:** simulator. Responsive rule-based policies, three interventions, seeded paired rollouts, outcomes, paired bootstrap, `/compare`, tests.
+- **B. Stage 4:** assumption controls (cover delay, attacker policy), predeclared decision rule, challenger grid search with an inconclusive case, "What if" page with the simulated branch drawn on the pitch, held-out variant check.
+- **C. Stage 5:** Microsoft Agent Framework (`agent-framework-foundry`). Planner, evidence, challenger and producer roles calling our tools; claim validation; one repair attempt; offline/fallback labels; trace in the UI.
+- **Benedict, in parallel:** install the Azure CLI, run `az login`, create a Foundry project and deploy a small chat model, then share the endpoint and deployment name (not keys).
+
+**27 Oct:**
+- Stage 6: casual/analyst modes, recap, overlay export and preview.
+- Stage 7: evaluation runs (A/B/C), recorded results, fixes.
+- Stage 8: ARCHITECTURE / EVALUATION / DEMO_SCRIPT / SUBMISSION docs, redeploy, link checks.
+- Benedict: record the video and submit.
+
+**Cut order if late:** Kiswahili → speech → Missing Player → extra fixture families beyond the held-out variants → SSE.
+
 ## Next concrete task
 
-Stage 3:
+1. **Blocked — Azure model deployment hold (27 Oct, early hours):**
+   - Created on Azure for Students (bn7622@princeton.edu, Switzerland North; the subscription policy only allows italynorth, switzerlandnorth, spaincentral, uaenorth and austriaeast): resource group `second-look-rg`, AIServices resource `secondlook-chui-ai`, and project `second-look` (endpoint `https://secondlook-chui-ai.services.ai.azure.com/api/projects/second-look`).
+   - Every model deployment fails with **715-123420 "unusual activity"**: gpt-5.4-mini (zero quota), gpt-5-mini (quota 500), gpt-oss-120b (quota 5000).
+   - The Gmail account nkiprotich439@gmail.com has no Azure subscription. GitHub Models (the considered fallback) was retired on 30 Jul 2026.
+   - Benedict is opening a support ticket and asking the organisers.
+   - When a deployment exists: set `.env`, then Then run `SECOND_LOOK_LIVE_TESTS=1 pytest tests/test_agents.py -k live` and an end-to-end UI check in foundry mode, and record the model, calls and tokens.
+2. Benedict: support ticket / organisers for the Azure hold. If a model deploys, run the live test and update SUBMISSION.md and README.
+3. Benedict: record the demo video (DEMO_SCRIPT.md), make the GitHub repo public, push, update Innovation Studio, check links signed out, submit before 11:59 pm PT.
+
+Superseded Stage 3 plan, kept for reference:
 1. `backend/app/simulation/`: kinematic step shared with the generator; rule-based responsive policies (attacker pass/carry/retain choice from local geometry; defender follow/cover/contain); bounded execution noise from a coupled seed schedule keyed by (rollout, player, step, event type).
 2. Interventions `hold`, `press_earlier`, `press_with_cover`, branching from the earliest changed frame with no teleport.
 3. Outcomes over 6–10 s: dangerous-zone entry, possession retained, time to regain.

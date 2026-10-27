@@ -29,6 +29,13 @@ class Settings:
 
 
 def load_settings() -> Settings:
+    # A local .env at the repo root is read if present (never committed); real environment variables win.
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(REPO_ROOT / ".env", override=False)
+    except ImportError:
+        pass
     mode = os.environ.get("SECOND_LOOK_MODE", "offline").strip().lower()
     if mode not in ("offline", "foundry"):
         mode = "offline"

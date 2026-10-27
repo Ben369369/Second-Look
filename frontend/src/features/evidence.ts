@@ -10,6 +10,7 @@ export const CLASS_CODE: Record<Fact["evidence_class"], string> = {
 export function formatValue(f: Fact): string {
   if (f.value === null) return "—";
   if (f.metric === "lane_access") return `${f.value > 0 ? "+" : ""}${f.value.toFixed(2)} s`;
+  if (f.metric === "sim_danger") return `${f.value.toFixed(0)}% danger`;
   const n = Number.isInteger(f.value) ? String(f.value) : f.value.toFixed(1);
   // Ratio units ("of 9 outfield teammates") compress to "3 / 9"; the statement keeps the wording.
   const ratio = /^of (\d+)/.exec(f.unit);
@@ -27,6 +28,7 @@ export const METRIC_LABEL: Record<string, string> = {
   open_lanes: "Open passing lanes",
   final_third_share: "Final-third events",
   transitions: "Possession changes",
+  sim_danger: "Simulated danger",
 };
 
 /** Telestration for a fact, drawn at the fact's focus moment. */

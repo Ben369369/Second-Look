@@ -79,9 +79,13 @@ def validate_fixture(manifest: ScenarioManifest, frames: list[TrackingFrame], ev
     if len({e.event_id for e in events}) != len(events):
         issues.append("duplicate event ids")
 
+    event_only = manifest.availability == "event-only"
+    if event_only and frames:
+        issues.append("event-only fixture contains tracking frames")
     for i, e in enumerate(events):
         for fid in e.related_frame_ids:
-            if fid not in by_id:
+            # Event-only data keeps the recording's frame references but has no frames to resolve them against.
+            if fid not in by_id and not event_only:
                 issues.append(f"{e.event_id}: unknown frame {fid}")
         if e.player_id is not None and e.player_id not in roster:
             issues.append(f"{e.event_id}: unknown player {e.player_id}")

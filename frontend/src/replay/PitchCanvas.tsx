@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ReplayBundle } from "../api/types";
+import type { ReplayBundle, TrackingFrame } from "../api/types";
 import { type Lookup, type RenderState, stateAt } from "./model";
 
 /** A point is either pitch coordinates or a player ID resolved to that player's current position. */
@@ -19,6 +19,10 @@ interface Props {
   showGrid: boolean;
   /** Accessible description of what the canvas shows right now. */
   label: string;
+  /** "simulated" draws a dashed frame and a SIMULATED watermark. */
+  variant?: "recorded" | "simulated";
+  /** Recorded positions drawn as hollow outlines for comparison (simulated view). */
+  ghost?: { frames: TrackingFrame[]; t: number } | null;
 }
 
 const PAD_M = 2.5;
@@ -31,7 +35,7 @@ const LINE = "#b3c0d4";
 
 type Map2 = { sx: (x: number) => number; sy: (y: number) => number; scale: number };
 
-export function PitchCanvas({ bundle, lookup, t, highlight, annotation, showGrid, label }: Props) {
+export function PitchCanvas({ bundle, lookup, t, highlight, annotation, showGrid, label, variant = "recorded", ghost = null }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [box, setBox] = useState({ w: 800, h: 520 });
@@ -66,11 +70,13 @@ export function PitchCanvas({ bundle, lookup, t, highlight, annotation, showGrid
     const m: Map2 = { sx: (x) => (x + PAD_M) * scale, sy: (y) => (W - y + PAD_M) * scale, scale };
     const state = stateAt(bundle.frames, t);
     drawPitch(ctx, width, height, m, L, W, showGrid);
+    if (ghost) drawGhosts(ctx, stateAt(ghost.frames, ghost.t), lookup, m);
     if (annotation) drawPaths(ctx, bundle, annotation, t, m);
     drawBallTrail(ctx, bundle, t, m);
     if (annotation) drawLines(ctx, annotation, state, m);
     drawPlayers(ctx, state, lookup, highlight, m);
-  }, [bundle, lookup, t, highlight, annotation, showGrid, width, height, L, W]);
+    if (variant === "simulated") drawSimulatedFrame(ctx, width, height);
+  }, [bundle, lookup, t, highlight, annotation, showGrid, width, height, L, W, variant, ghost]);
 
   return (
     <div ref={wrapRef} className="pitch-wrap">
@@ -83,6 +89,43 @@ export function PitchCanvas({ bundle, lookup, t, highlight, annotation, showGrid
       />
     </div>
   );
+}
+
+/** Recorded positions at the same moment, as hollow outlines. */
+function drawGhosts(ctx: CanvasRenderingContext2D, state: RenderState, lookup: Lookup, m: Map2) {
+  const r = Math.max(7, 0.95 * m.scale);
+  ctx.save();
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1.25;
+  for (const p of state.players) {
+    const team = lookup.teams.get(p.team_id);
+    ctx.strokeStyle = team?.color ?? "#999";
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    if (team?.marker_shape === "square") ctx.rect(m.sx(p.x) - r, m.sy(p.y) - r, 2 * r, 2 * r);
+    else ctx.arc(m.sx(p.x), m.sy(p.y), r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawSimulatedFrame(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  ctx.save();
+  ctx.strokeStyle = "#0ca678";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([10, 6]);
+  ctx.strokeRect(1.5, 1.5, w - 3, h - 3);
+  ctx.setLineDash([]);
+  ctx.font = "700 12px system-ui, sans-serif";
+  const text = "SIMULATED · one sampled rollout";
+  const tw = ctx.measureText(text).width + 14;
+  ctx.fillStyle = "#0ca678";
+  ctx.fillRect(10, 10, tw, 22);
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, 17, 21.5);
+  ctx.restore();
 }
 
 function drawPitch(ctx: CanvasRenderingContext2D, w: number, h: number, m: Map2, L: number, W: number, grid: boolean) {

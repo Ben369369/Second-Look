@@ -5,12 +5,23 @@ from fastapi import APIRouter, Query, Request
 from app.data.loader import ScenarioRegistry
 from app.errors import ApiError
 from app.investigations.questions import CATALOGUE, ask
-from app.metrics.facts import FactBuilder
+from app.exports.overlay import CueError, build_export
+from app.investigations.registry import RegistryFull
+from app.metrics.facts import FactBuilder, with_plain
 from app.metrics.view import make_view
+from app.simulation.compare import challenge, compare
+from app.simulation.engine import BranchError
 from app.schemas import (
     AskRequest,
     AskResponse,
     Capabilities,
+    ChallengeRequest,
+    ExportBundle,
+    InvestigationRequest,
+    InvestigationState,
+    ChallengeResult,
+    CompareRequest,
+    ComparisonResult,
     FactPacket,
     QuestionOption,
     ReplayBundle,
@@ -43,10 +54,10 @@ def health() -> dict[str, str]:
 @router.get("/capabilities", response_model=Capabilities)
 def capabilities(request: Request) -> Capabilities:
     settings = request.app.state.settings
-    # Stage 1: no model integration exists yet, so the provider is always offline.
+    inv = request.app.state.investigations
     return Capabilities(
-        provider_mode="offline",
-        provider_label=OFFLINE_LABEL,
+        provider_mode="foundry" if inv.model_enabled else "offline",
+        provider_label=f"Microsoft Foundry · {settings.foundry_model_deployment} · Agent Framework" if inv.model_enabled else OFFLINE_LABEL,
         model_configured=settings.foundry_configured,
         scenarios=_registry(request).ids(),
         languages=["en"],
@@ -122,7 +133,7 @@ def get_facts(
         dataset_hash=view.manifest.dataset_hash,
         cursor_s=view.cursor_s,
         window=TimeWindow(start_s=start_s, end_s=end),
-        facts=[f for f in facts if f is not None],
+        facts=with_plain(view, [f for f in facts if f is not None]),
         refused=refused,
     )
 
@@ -132,3 +143,58 @@ def ask_question(scenario_id: str, body: AskRequest, request: Request) -> AskRes
     """Answer a supported factual question from data up to the cursor (offline rule-based routing)."""
     bundle = _bundle(request, scenario_id)
     return ask(make_view(bundle, body.cursor_s), body.question)
+
+
+@router.post("/scenarios/{scenario_id}/compare", response_model=ComparisonResult)
+def compare_interventions(scenario_id: str, body: CompareRequest, request: Request) -> ComparisonResult:
+    """Simulate hold / press earlier / press with cover from the branch frame (evidence class: simulated)."""
+    bundle = _bundle(request, scenario_id)
+    if body.rollouts > request.app.state.settings.simulation_max_rollouts:
+        raise ApiError(422, "too_many_rollouts", f"At most {request.app.state.settings.simulation_max_rollouts} rollouts per action.")
+    try:
+        return compare(bundle, body)
+    except BranchError as exc:
+        raise ApiError(422, "invalid_branch", str(exc)) from exc
+
+
+@router.post("/scenarios/{scenario_id}/challenge", response_model=ChallengeResult)
+def challenge_finding(scenario_id: str, body: ChallengeRequest, request: Request) -> ChallengeResult:
+    """Search a bounded grid of assumptions for settings that change the recommendation."""
+    bundle = _bundle(request, scenario_id)
+    try:
+        return challenge(bundle, body)
+    except BranchError as exc:
+        raise ApiError(422, "invalid_branch", str(exc)) from exc
+
+
+@router.post("/investigations", response_model=InvestigationState)
+async def start_investigation(body: InvestigationRequest, request: Request, scenario_id: str = Query("rb_press_hero")) -> InvestigationState:
+    """Start a bounded investigation. Offline mode completes in the response; Foundry mode returns
+    a queued state to poll at GET /api/investigations/{id}."""
+    bundle = _bundle(request, scenario_id)
+    try:
+        return await request.app.state.investigations.start(bundle, body)
+    except RegistryFull as exc:
+        raise ApiError(429, "too_many_investigations", str(exc)) from exc
+
+
+@router.get("/investigations/{investigation_id}", response_model=InvestigationState)
+def get_investigation(investigation_id: str, request: Request) -> InvestigationState:
+    state = request.app.state.investigations.get(investigation_id)
+    if state is None:
+        raise ApiError(404, "investigation_not_found", "No such investigation (it may have expired).")
+    return state
+
+
+@router.get("/investigations/{investigation_id}/export", response_model=ExportBundle)
+def export_investigation(investigation_id: str, request: Request) -> ExportBundle:
+    """Recap plan and timed overlay cues (JSON) built from the investigation's approved claims."""
+    state = request.app.state.investigations.get(investigation_id)
+    if state is None:
+        raise ApiError(404, "investigation_not_found", "No such investigation (it may have expired).")
+    if state.status != "complete":
+        raise ApiError(409, "investigation_not_complete", "The investigation has not finished yet.")
+    try:
+        return build_export(state, _bundle(request, state.scenario_id))
+    except CueError as exc:
+        raise ApiError(500, "invalid_overlay", f"Overlay validation failed: {exc}") from exc

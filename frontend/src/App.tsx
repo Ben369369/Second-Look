@@ -1,6 +1,6 @@
 import { AppShell, Badge, Burger, Group, Loader, NavLink, Paper, ScrollArea, Select, Stack, Text, TextInput, Title, Tooltip } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconBallFootball, IconDatabase, IconLayoutDashboard, IconListDetails, IconMessageQuestion, IconSearch, IconUsers } from "@tabler/icons-react";
+import { IconArrowsShuffle, IconBallFootball, IconDatabase, IconMovie, IconLayoutDashboard, IconListDetails, IconMessageQuestion, IconSearch, IconUsers } from "@tabler/icons-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { api, ApiError } from "./api/client";
 import type { Capabilities, QuestionOption, ReplayBundle, ScenarioSummary } from "./api/types";
@@ -11,8 +11,10 @@ import { InvestigateView } from "./views/InvestigateView";
 import { MethodsView } from "./views/MethodsView";
 import { OverviewView } from "./views/OverviewView";
 import { PlayersView } from "./views/PlayersView";
+import { RecapView } from "./views/RecapView";
+import { WhatIfView } from "./views/WhatIfView";
 
-type View = "overview" | "investigate" | "players" | "events" | "methods";
+type View = "overview" | "investigate" | "whatif" | "recap" | "players" | "events" | "methods";
 
 const NAV: { section: string; items: { view: View; label: string; icon: ReactNode }[] }[] = [
   {
@@ -20,6 +22,8 @@ const NAV: { section: string; items: { view: View; label: string; icon: ReactNod
     items: [
       { view: "overview", label: "Overview", icon: <IconLayoutDashboard size={18} /> },
       { view: "investigate", label: "Ask & evidence", icon: <IconMessageQuestion size={18} /> },
+      { view: "whatif", label: "What if?", icon: <IconArrowsShuffle size={18} /> },
+      { view: "recap", label: "Recap & overlay", icon: <IconMovie size={18} /> },
     ],
   },
   {
@@ -35,6 +39,8 @@ const NAV: { section: string; items: { view: View; label: string; icon: ReactNod
 const TITLES: Record<View, string> = {
   overview: "Sequence overview",
   investigate: "Ask & evidence",
+  whatif: "What if the right-back had pressed earlier?",
+  recap: "Recap & overlay",
   players: "Players",
   events: "Events",
   methods: "Methods & data",
@@ -241,6 +247,8 @@ function Shell(props: { caps: Capabilities; scenarios: ScenarioSummary[]; scenar
         </Paper>
         {view === "overview" && <OverviewView />}
         {view === "investigate" && <InvestigateView seed={seed} />}
+        {view === "whatif" && <WhatIfView />}
+        {view === "recap" && <RecapView />}
         {view === "players" && <PlayersView />}
         {view === "events" && <EventsView />}
         {view === "methods" && <MethodsView />}

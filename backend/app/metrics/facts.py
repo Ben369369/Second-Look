@@ -6,10 +6,12 @@ never disagree. A model may later choose and order facts, but not write them.
 
 from __future__ import annotations
 
+import re
+
 from app.metrics import core
 from app.metrics.core import METHOD_VERSIONS as MV
 from app.metrics.view import SequenceView
-from app.schemas import Coverage, Fact, MatchEvent, RefusedMetric, TimeWindow, TrackingFrame
+from app.schemas import ComparisonResult, Coverage, Fact, MatchEvent, RefusedMetric, TimeWindow, TrackingFrame
 
 TRACKING_LIMIT = "Synthetic tracking at 10 Hz; positions are simulator output, not real measurements."
 
@@ -362,3 +364,99 @@ class FactBuilder:
                 f"outfield teammates in open passing lanes ({names})."
             ),
         )
+
+
+# -- simulated ------------------------------------------------------------------
+
+
+SIM_PLAIN = {"hold": "hold position", "press_earlier": "press earlier", "press_with_cover": "press earlier with a teammate covering"}
+
+
+def _pct(x: float) -> str:
+    """Whole percent, rounding halves up (matches the frontend's Number.toFixed display)."""
+    return str(int(x * 100 + 0.5 + 1e-9))
+
+
+def sim_run_id(f: Fact) -> str | None:
+    """Run id of a simulated fact (fact ids are 'sim_danger:<action>@<run_id>')."""
+    return f.fact_id.split("@", 1)[1] if f.evidence_class == "simulated" and "@" in f.fact_id else None
+
+
+def simulated_facts(view: SequenceView, result: ComparisonResult) -> list[Fact]:
+    """One SIMULATED fact per intervention, rendered from the comparison's actual counts."""
+    b = result.branch
+    out = []
+    for a in result.actions:
+        d, g = a.danger, a.regain
+        out.append(
+            Fact(
+                fact_id=f"sim_danger:{a.action}@{result.run_id}",
+                evidence_class="simulated",
+                metric="sim_danger",
+                subject_ids=[b.presser, b.carrier] + ([b.cover] if a.action == "press_with_cover" else []),
+                value=round(d.rate * 100, 1),
+                unit="% of rollouts",
+                time_window=TimeWindow(start_s=b.time_s, end_s=b.time_s),
+                focus_time_s=b.time_s,
+                source_event_ids=[],
+                source_frame_range=(b.frame_id, b.frame_id),
+                method_version=result.policy_version,
+                coverage=_coverage(view, 1, 1, f"run {result.run_id}, {d.n} rollouts per action"),
+                limitations=result.assumptions,
+                plain=(
+                    f"In the simulation, if {_surname(view, b.presser)} chose to {SIM_PLAIN[a.action]}, Harbor got into a dangerous "
+                    f"position in {d.count} of {d.n} tries and Cedar won the ball back in {g.count} of {g.n}."
+                ),
+                statement=(
+                    f"Simulated, '{a.label.lower()}': Harbor reached a dangerous possession in {d.count} of {d.n} rollouts "
+                    f"({_pct(d.rate)}%, 95% {_pct(d.ci95[0])}–{_pct(d.ci95[1])}%) and Cedar won the ball back in "
+                    f"{g.count} of {g.n} ({_pct(g.rate)}%)."
+                ),
+            )
+        )
+    return out
+
+
+# -- plain language --------------------------------------------------------------
+
+
+def _surname(view: SequenceView, pid: str) -> str:
+    p = view.players.get(pid)
+    return p.name.split()[-1] if p else pid
+
+
+def _team_name(view: SequenceView, tid: str) -> str:
+    return next((t.name for t in view.manifest.teams if t.team_id == tid), tid)
+
+
+def plain_statement(view: SequenceView, f: Fact) -> str:
+    """Casual-audience sentence for a fact, from the same value (no new numbers)."""
+    s = [_surname(view, x) if x in view.players else _team_name(view, x) for x in f.subject_ids]
+    v = f.value
+    den = re.match(r"of (\d+)", f.unit)
+    if f.metric == "defender_distance" and v is not None:
+        return f"{s[0]} was {v:.1f} m away from {s[1]}."
+    if f.metric == "response_time" and v is not None:
+        return f"{s[0]} took {v:.1f} s to get close to {s[1]} after the pass arrived."
+    if f.metric == "pass_distance" and v is not None and len(s) >= 2:
+        return f"{s[0]}'s pass to {s[1]} went {v:.1f} m."
+    if f.metric == "pass_completion" and v is not None and den:
+        return f"{s[0]} completed {int(v)} of {den.group(1)} passes."
+    if f.metric == "possession_duration" and v is not None:
+        return f"{s[0]} kept the ball for {v:.1f} s."
+    if f.metric == "tracked_running" and v is not None:
+        return f"{s[0]} ran {v:.1f} m."
+    if f.metric == "transitions" and v is not None:
+        return f"The ball changed hands {int(v)} time{'s' if v != 1 else ''}."
+    if f.metric == "final_third_share" and v is not None and den:
+        return f"{int(v)} of {s[0]}'s {den.group(1)} moves on the ball started in the final third."
+    if f.metric == "open_lanes" and v is not None and den:
+        return f"Our estimate: {s[0]} had {int(v)} safe passing options out of {den.group(1)}."
+    if f.metric == "lane_access" and v is not None and len(s) >= 3:
+        verb = "could just about" if 0 < v <= 0.1 else ("could" if v > 0 else "could not")
+        return f"Our estimate: {s[2]} {verb} cut out the pass from {s[0]} to {s[1]}."
+    return f.statement
+
+
+def with_plain(view: SequenceView, facts: list[Fact]) -> list[Fact]:
+    return [f if f.plain else f.model_copy(update={"plain": plain_statement(view, f)}) for f in facts]

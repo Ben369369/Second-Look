@@ -74,7 +74,7 @@ export function OverviewView() {
             <Text fz="sm" c="dimmed" mb="xs">
               {answer ? "Facts behind the current answer. Click a row to see it on the pitch." : "Ask a question to see the facts behind the answer."}
             </Text>
-            <FactList facts={answer?.facts ?? []} refused={answer?.refused} empty="No question asked yet." maxHeight={300} />
+            <FactList facts={answer?.facts ?? []} empty="No question asked yet." maxHeight={300} />
           </Card>
         </Grid.Col>
       </Grid>

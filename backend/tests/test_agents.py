@@ -288,3 +288,17 @@ def test_unusable_evidence_selection_degrades_only_that_step(bundle):
     assert state.provider_mode == "foundry" and not state.errors and state.claims
     assert any("continuing with every fact" in t.summary for t in state.trace)
     assert any(c.fact_ids and c.fact_ids[0].startswith("sim_verdict") for c in state.claims)
+
+
+def test_answer_always_includes_a_measurement(bundle):
+    base = honest_script()
+
+    def script(role, messages, turn):
+        if role == "producer":
+            sims = [f["fact_id"] for f in facts_in_prompt(messages) if f["class"] == "simulated"]
+            return {"text": json.dumps({"fact_ids": sims[:3], "interpretations": []})}
+        return base(role, messages, turn)
+
+    state, _ = run(bundle, script)
+    assert any(c.claim_type == "observed" for c in state.claims)
+    assert any("at least one observation" in t.summary for t in state.trace)

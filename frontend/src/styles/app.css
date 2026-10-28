@@ -100,6 +100,31 @@ body {
   letter-spacing: -0.5px;
 }
 
+.verdict {
+  font-family: "Newsreader", "Source Serif 4", Georgia, serif;
+  font-size: clamp(30px, 3.6vw, 40px);
+  line-height: 1.1;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.duel .big-number {
+  color: #9aa3b5;
+}
+
+.duel-safe .big-number {
+  color: var(--ink);
+}
+
+.duel-safe {
+  padding-top: 8px;
+  border-top: 3px solid var(--ink);
+}
+
+.duel {
+  padding-top: 8px;
+}
+
 .finding {
   font-family: "Newsreader", "Source Serif 4", Georgia, serif;
   font-size: 21px;

@@ -4,7 +4,7 @@
     "expectation_met": 12,
     "c_offline_investigations": 48,
     "c_offline_completed": 48,
-    "claims_shown": 174,
+    "claims_shown": 147,
     "claims_failing_revalidation": 0,
     "adversarial_rejected": 139,
     "adversarial_injected": 139,
@@ -66,16 +66,16 @@
         9
       ]
     },
-    "routing_met": 36,
-    "routing_checks": 36,
-    "latency_ms_median_all": 1,
-    "latency_ms_median_pressing_with_simulation": 1096,
-    "latency_ms_max": 1313,
+    "routing_met": 60,
+    "routing_checks": 60,
+    "latency_ms_median_all": 2,
+    "latency_ms_median_pressing_with_simulation": 2585,
+    "latency_ms_max": 2740,
     "pipeline_a_claims": 84,
     "pipeline_a_invalid": 0,
     "not_run": {
       "B": "single-agent baseline not built",
-      "C-live": "only an on-device model is available (about 80 s per investigation); a live benchmark was not run"
+      "C-live": "only a small on-device smoke benchmark (docs/live_results.json); answer quality not rated"
     }
   },
   "c_offline": [
@@ -83,19 +83,19 @@
       "variant": "ev01",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 1292,
+      "latency_ms": 1117,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -124,19 +124,19 @@
       "variant": "ev02",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 1185,
+      "latency_ms": 2703,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -165,19 +165,19 @@
       "variant": "ev03",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 1043,
+      "latency_ms": 2700,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -206,19 +206,19 @@
       "variant": "ev04",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 6,
       "challenger_cells": 12,
-      "latency_ms": 1290,
+      "latency_ms": 2740,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -247,19 +247,19 @@
       "variant": "ev05",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 929,
+      "latency_ms": 2670,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -288,19 +288,19 @@
       "variant": "ev06",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 997,
+      "latency_ms": 2585,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -329,19 +329,19 @@
       "variant": "ev07",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 1313,
+      "latency_ms": 999,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -370,19 +370,19 @@
       "variant": "ev08",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 1096,
+      "latency_ms": 1382,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -411,19 +411,19 @@
       "variant": "ev09",
       "class": "press_recorded",
       "outcome": "answered",
-      "claims": 13,
-      "simulated_claims": 6,
+      "claims": 10,
+      "simulated_claims": 3,
       "tracked_facts": 5,
       "invalid_shown": 0,
       "rejected_internally": 0,
       "meets_expectation": true,
       "notes": [
-        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the What if? page."
+        "Simulated results come from a rule-based model (rules/1, 200 rollouts per choice, cover delay 0.6 s, patient attackers). They are counts inside the simulator, not real-world probabilities. Change the assumptions on the Three choices page."
       ],
       "challenger_baseline": "recommend:hold",
       "challenger_changed": 0,
       "challenger_cells": 12,
-      "latency_ms": 1062,
+      "latency_ms": 1040,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -546,7 +546,7 @@
       "challenger_baseline": null,
       "challenger_changed": null,
       "challenger_cells": null,
-      "latency_ms": 1,
+      "latency_ms": 3,
       "other_questions": [
         {
           "question": "What passing options did Rossi have?",
@@ -658,6 +658,24 @@
     },
     {
       "variant": "ev01",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev01",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev01",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -685,6 +703,24 @@
     },
     {
       "variant": "ev02",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev02",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev02",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -712,6 +748,24 @@
     },
     {
       "variant": "ev03",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev03",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev03",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -739,6 +793,24 @@
     },
     {
       "variant": "ev04",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev04",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev04",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -766,6 +838,24 @@
     },
     {
       "variant": "ev05",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev05",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev05",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -793,6 +883,24 @@
     },
     {
       "variant": "ev06",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev06",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev06",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -820,6 +928,24 @@
     },
     {
       "variant": "ev07",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev07",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev07",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -847,6 +973,24 @@
     },
     {
       "variant": "ev08",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev08",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev08",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -874,6 +1018,24 @@
     },
     {
       "variant": "ev09",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev09",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev09",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -901,6 +1063,24 @@
     },
     {
       "variant": "ev10",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev10",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev10",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -928,6 +1108,24 @@
     },
     {
       "variant": "ev11",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev11",
+      "question": "Should #99 press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev11",
       "question": "Should Kiprono make a run or hold?",
       "expected": [
         "unsupported"
@@ -947,6 +1145,24 @@
     {
       "variant": "ev12",
       "question": "Should Messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev12",
+      "question": "should messi press earlier?",
+      "expected": [
+        "clarify"
+      ],
+      "outcome": "clarify",
+      "ok": true
+    },
+    {
+      "variant": "ev12",
+      "question": "Should #99 press earlier?",
       "expected": [
         "clarify"
       ],

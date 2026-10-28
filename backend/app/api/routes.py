@@ -196,11 +196,10 @@ def export_investigation(investigation_id: str, request: Request, audience: Lite
         raise ApiError(404, "investigation_not_found", "No such investigation (it may have expired).")
     if state.status != "complete":
         raise ApiError(409, "investigation_not_complete", "The investigation has not finished yet.")
-    if audience and audience != state.audience:
-        claims = state.casual_claims if audience == "casual" else state.claims
-        if audience == "analyst" and state.audience == "casual":
-            raise ApiError(409, "audience_unavailable", "This investigation was run for the fan view only.")
-        state = state.model_copy(update={"audience": audience, "claims": claims})
+    # Both presentations come from the same stored facts, whichever audience was selected when asking.
+    audience = audience or state.audience
+    claims = state.casual_claims if audience == "casual" and state.casual_claims else state.claims
+    state = state.model_copy(update={"audience": audience, "claims": claims})
     try:
         return build_export(state, _bundle(request, state.scenario_id))
     except CueError as exc:

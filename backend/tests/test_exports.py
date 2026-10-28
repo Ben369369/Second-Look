@@ -34,12 +34,14 @@ def test_audiences_share_the_same_facts(client, bundle):
     a_facts = {f["fact_id"]: f for f in analyst["facts"]}
     assert c_facts.keys() == a_facts.keys()
     assert all(c_facts[k]["value"] == a_facts[k]["value"] for k in c_facts)
-    cited = {i for c in casual["claims"] for i in c["fact_ids"]}
+    cited = {i for c in casual["casual_claims"] for i in c["fact_ids"]}
     assert cited <= a_facts.keys()
     # Casual is shorter and plainer, but every claim still passes the same validator.
-    assert len(casual["claims"]) < len(analyst["claims"])
+    assert len(casual["casual_claims"]) < len(analyst["claims"])
     assert not casual["rejected_claims"]
-    assert any(c["claim_type"] == "interpretation" for c in casual["claims"])  # the caveat
+    assert any(c["claim_type"] == "interpretation" for c in casual["casual_claims"])  # the caveat
+    # Whichever audience was selected when asking, both presentations exist.
+    assert casual["claims"] and analyst["casual_claims"]
 
 
 def test_casual_numbers_are_identical_to_analyst_numbers(client, bundle):
@@ -48,8 +50,8 @@ def test_casual_numbers_are_identical_to_analyst_numbers(client, bundle):
     casual = _investigate(client, "casual")
     facts = {f["fact_id"]: Fact.model_validate(f) for f in casual["facts"]}
     players = {p.player_id: p for t in bundle.manifest.teams for p in t.players}
-    ok, bad = validate_claims([Claim.model_validate(c) for c in casual["claims"]], facts, players)
-    assert not bad and len(ok) == len(casual["claims"])
+    ok, bad = validate_claims([Claim.model_validate(c) for c in casual["casual_claims"]], facts, players)
+    assert not bad and len(ok) == len(casual["casual_claims"])
 
 
 @pytest.mark.parametrize("audience", ["casual", "analyst"])
@@ -63,7 +65,7 @@ def test_export_is_timed_labelled_and_traceable(client, audience):
     assert out["recap_duration_s"] == pytest.approx(out["sequence_duration_s"] / out["playback_rate"], abs=0.1)
     assert 30 <= out["recap_duration_s"] <= 60
     facts = {f["fact_id"]: f for f in state["facts"]}
-    approved = {c["text"] for c in state["claims"]}
+    approved = {c["text"] for c in state["casual_claims" if audience == "casual" else "claims"]}
     prev_end = 0.0
     for cue in cues:
         assert cue["start_s"] >= prev_end - 1e-6 and cue["duration_s"] > 0
@@ -105,3 +107,10 @@ def test_export_validator_rejects_tampering(client, bundle):
 
 def test_export_errors(client):
     assert client.get("/api/investigations/nope/export").status_code == 404
+
+
+def test_fan_started_investigation_exports_both_audiences(client):
+    state = _investigate(client, "casual")
+    for audience in ("analyst", "casual"):
+        r = client.get(f"/api/investigations/{state['investigation_id']}/export", params={"audience": audience})
+        assert r.status_code == 200 and r.json()["audience"] == audience

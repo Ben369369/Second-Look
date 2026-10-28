@@ -320,6 +320,12 @@ class Workflow:
         if verdict and verdict not in picked:
             picked.insert(0, verdict)
             self._trace("producer", "rule", "the decision rule's verdict is always shown; added")
+        if picked and all(self.ctx.facts[i].evidence_class == "simulated" for i in picked):
+            # An answer about what happened shows at least one measurement, not only simulations.
+            measured = next((i for i in self.chosen if self.ctx.facts[i].evidence_class != "simulated" and i not in picked), None)
+            if measured:
+                picked.append(measured)
+                self._trace("producer", "rule", "added a measured fact: an answer shows at least one observation, not only simulations")
         if len(picked) < MIN_FACT_CLAIMS:
             extra = [i for i in self.chosen if i not in picked][: MIN_FACT_CLAIMS - len(picked)]
             if extra:
@@ -328,7 +334,7 @@ class Workflow:
         claims = []
         for i in picked:
             f = self.ctx.facts[i]
-            text = (f.plain or f.statement) if self.state.audience == "casual" else f.statement
+            text = f.statement
             claims.append(Claim(claim_type=kind[f.evidence_class], text=text, fact_ids=[i]))  # type: ignore[arg-type]
         claims += [Claim(claim_type="interpretation", text=x.text, fact_ids=x.fact_ids) for x in out.interpretations[:MAX_INTERPRETATIONS]]
         return claims
@@ -353,14 +359,10 @@ class Workflow:
         if sims:
             self._trace("simulator", "rule", f"simulated comparison ({', '.join(sims)}) from the pass that triggered the press")
         claims: list[Claim] = []
-        if s.audience == "casual" and res.facts:
-            claims = casual_claims(res.intent, list(self.ctx.facts.values()))
-            self._trace("producer", "rule", f"casual template: {len(claims)} claims from the same facts")
-        else:
-            for sent in res.answer:
-                classes = {self.ctx.facts[i].evidence_class for i in sent.fact_ids if i in self.ctx.facts}
-                ctype = "simulated" if classes == {"simulated"} else "estimated" if "estimated" in classes else "observed"
-                claims.append(Claim(claim_type=ctype, text=sent.text, fact_ids=sent.fact_ids))  # type: ignore[arg-type]
+        for sent in res.answer:
+            classes = {self.ctx.facts[i].evidence_class for i in sent.fact_ids if i in self.ctx.facts}
+            ctype = "simulated" if classes == {"simulated"} else "estimated" if "estimated" in classes else "observed"
+            claims.append(Claim(claim_type=ctype, text=sent.text, fact_ids=sent.fact_ids))  # type: ignore[arg-type]
         ok, bad = validate_claims(claims, self.ctx.facts, v.players)
         self._trace("validator", "validation", f"{len(ok)} claims approved, {len(bad)} rejected")
         s.claims = ok
@@ -444,7 +446,8 @@ class Workflow:
             self.chosen = chosen or [i for i, f in self.ctx.facts.items() if f.evidence_class != "simulated"]
             if len(chosen) < len(evidence.supporting_fact_ids + evidence.contradicting_fact_ids):
                 self._trace("validator", "validation", "evidence analyst cited fact ids that no tool returned; ignored")
-            s.notes.extend(m for m in evidence.missing_data if not any(ch.isdigit() for ch in m))
+            if evidence.missing_data:
+                self._trace("evidence analyst", "rule", f"listed {len(evidence.missing_data)} missing-data items (model commentary, not shown as findings)")
             self._sync()
 
             # 3. Challenger (counterfactual questions)
@@ -453,12 +456,13 @@ class Workflow:
                 ch_tools = tools_for("challenger")
                 challenger = Agent(client, CHALLENGER, name="challenger", tools=[ch_tools["evaluate_interventions"], ch_tools["search_reversal"]])
                 chal: ChallengeOut = await self._call(challenger, "challenger", f"Question: {s.question}", ChallengeOut)  # type: ignore[assignment]
-                concerns = [c for c in chal.concerns[:3] if not any(ch.isdigit() for ch in c)]
-                s.notes.extend(concerns)
+                concerns = [c for c in chal.concerns[:3] if not any(ch.isdigit() for ch in c)]  # passed to the producer only
                 searched = None if self.ctx.reversal_changed is None else self.ctx.reversal_changed == 0
                 if searched is not None and chal.finding_robust is not None and chal.finding_robust != searched:
                     self._trace("validator", "validation", f"challenger called the finding {'robust' if chal.finding_robust else 'not robust'}; its reversal search says otherwise, so the search result is used")
-                robust = {True: "robust", False: "not robust", None: "unknown"}[searched if searched is not None else chal.finding_robust]
+                robust = {True: "robust", False: "not robust", None: "unknown"}[searched]
+                if searched is None:
+                    self._trace("challenger", "error", "no completed reversal search; robustness left unknown")
                 challenge_note = f"finding {robust}; concerns: {'; '.join(concerns) or 'none'}"
                 self._trace("challenger", "rule", f"challenger verdict passed to the producer: {robust}")
                 self._sync()
@@ -467,7 +471,7 @@ class Workflow:
 
             # 4. Producer + validation (one repair round)
             s.status = "producing"
-            producer = Agent(client, PRODUCER.format(audience=AUDIENCE[s.audience]), name="producer")
+            producer = Agent(client, PRODUCER.format(audience=AUDIENCE["analyst"]), name="producer")  # fan view is code-rendered
             sim_ids = [i for i, f in self.ctx.facts.items() if f.evidence_class == "simulated"]
             fact_ids = list(dict.fromkeys((chosen or list(self.ctx.facts)) + sim_ids))
             prompt = (

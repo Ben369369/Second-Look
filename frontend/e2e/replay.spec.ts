@@ -103,7 +103,10 @@ test("answers computed past the replay position are flagged", async ({ page }) =
 
 test("the press page leads with the finding and the assumption that flips it", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByTestId("hero-number")).toHaveText("71 of 200", { timeout: 30_000 });
+  // The verdict leads; the safer count is the marked one, and lower is safer.
+  await expect(page.getByTestId("hero-verdict")).toHaveText("No. Holding was safer.", { timeout: 30_000 });
+  await expect(page.getByTestId("hero-number")).toContainText("30");
+  await expect(page.getByTestId("hero-number")).toContainText("71");
   await expect(page.getByTestId("hero-flip")).toContainText("1.2 s", { timeout: 30_000 });
   // Opens frozen on the measured gap when the ball arrived.
   await expect(page.getByTestId("selected-fact")).toContainText("8.5 m");

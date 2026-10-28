@@ -209,3 +209,22 @@ def test_shirt_numbers_in_words_and_attacking_side(hero):
     assert resolve_players(view, "how far did harbor no. 8 run")[0] == ["HAR-08"]
     assert resolve_players(view, "how far did the defending number 2 run")[0] == ["CED-02"]
     assert resolve_players(view, "how far did number 8 run")[2]  # ambiguous without a side
+
+
+@pytest.mark.parametrize(
+    "question,missing",
+    [
+        ("should messi press earlier?", "messi"),
+        ("Should #99 press earlier?", "#99"),
+        ("Should Harbor number 99 press earlier?", "#99"),
+        ("How far did messi run?", "messi"),
+    ],
+)
+def test_unresolved_player_references_never_fall_back_to_a_default(hero, question, missing):
+    res = ask(make_view(hero), question)
+    assert res.status == "clarify" and not res.facts and missing in res.notes[0]
+
+
+@pytest.mark.parametrize("question", ["how far did halvorsen run?", "Should he have pressed earlier?", "Did anyone press Rossi?"])
+def test_known_or_absent_references_still_answer(hero, question):
+    assert ask(make_view(hero), question).status == "answered"

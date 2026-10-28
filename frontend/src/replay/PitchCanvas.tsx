@@ -73,8 +73,12 @@ export function PitchCanvas({ bundle, lookup, t, highlight, annotation, showGrid
     if (ghost) drawGhosts(ctx, stateAt(ghost.frames, ghost.t), lookup, m);
     if (annotation) drawPaths(ctx, bundle, annotation, t, m);
     drawBallTrail(ctx, bundle, t, m);
-    if (annotation) drawLines(ctx, annotation, state, m);
-    drawPlayers(ctx, state, lookup, highlight, m);
+    // Line labels are drawn last and name tags keep clear of them, so the measurement always reads.
+    const keepOut: Box[] = [];
+    const lineLabels: (() => void)[] = [];
+    if (annotation) drawLines(ctx, annotation, state, m, keepOut, lineLabels);
+    drawPlayers(ctx, state, lookup, highlight, m, keepOut);
+    for (const draw of lineLabels) draw();
     if (variant === "simulated") drawSimulatedFrame(ctx, width, height);
   }, [bundle, lookup, t, highlight, annotation, showGrid, width, height, L, W, variant, ghost]);
 
@@ -226,7 +230,9 @@ function drawPaths(ctx: CanvasRenderingContext2D, bundle: ReplayBundle, a: Annot
   }
 }
 
-function drawLines(ctx: CanvasRenderingContext2D, a: Annotation, state: RenderState, m: Map2) {
+type Box = { x0: number; y0: number; x1: number; y1: number };
+
+function drawLines(ctx: CanvasRenderingContext2D, a: Annotation, state: RenderState, m: Map2, keepOut: Box[], labels: (() => void)[]) {
   const pos = new Map(state.players.map((p) => [p.player_id, p]));
   const resolve = (pt: AnchorPoint) => (typeof pt === "string" ? pos.get(pt) : pt);
   for (const line of a.lines) {
@@ -238,33 +244,70 @@ function drawLines(ctx: CanvasRenderingContext2D, a: Annotation, state: RenderSt
     const x1 = m.sx(q.x);
     const y1 = m.sy(q.y);
     const color = line.style === "threat" ? THREAT : line.style === "lane" ? LANE : SIGNAL;
+    const measure = line.style === "measure";
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    // Unit normal, for end ticks and for moving a short line's label off the markers.
+    const nx = len ? -(y1 - y0) / len : 0;
+    const ny = len ? (x1 - x0) / len : 1;
+    if (measure) {
+      // The measurement is the thing a viewer clicked: a thick stroke with a white halo and end ticks.
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 7;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    }
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = measure ? 3.5 : 2;
     ctx.setLineDash(line.style === "lane" ? [6, 4] : line.style === "threat" ? [2, 3] : []);
     ctx.beginPath();
     ctx.moveTo(x0, y0);
     ctx.lineTo(x1, y1);
+    if (measure) {
+      for (const [x, y] of [[x0, y0], [x1, y1]]) {
+        ctx.moveTo(x - nx * 7, y - ny * 7);
+        ctx.lineTo(x + nx * 7, y + ny * 7);
+      }
+    }
     ctx.stroke();
     ctx.setLineDash([]);
-    // Short lines would hide their label under player markers; the caption carries the value.
-    if (line.label && Math.hypot(x1 - x0, y1 - y0) >= 60) {
-      ctx.font = "600 11px system-ui, sans-serif";
-      const tw = ctx.measureText(line.label).width + 10;
-      const mx = (x0 + x1) / 2;
-      const my = (y0 + y1) / 2;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(mx - tw / 2, my - 9, tw, 18);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(mx - tw / 2, my - 9, tw, 18);
-      ctx.fillStyle = color;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(line.label, mx, my + 0.5);
+    ctx.lineCap = "butt";
+    // Long lines carry their label at the midpoint; a short measurement's label sits beside it, clear of the markers.
+    if (line.label && (len >= 60 || measure)) {
+      ctx.font = "700 12px system-ui, sans-serif";
+      const tw = ctx.measureText(line.label).width + 12;
+      const off = len >= 60 ? 0 : 24;
+      const mx = (x0 + x1) / 2 + nx * off;
+      const my = (y0 + y1) / 2 + ny * off;
+      const text = line.label;
+      keepOut.push({ x0: mx - tw / 2, y0: my - 9, x1: mx + tw / 2, y1: my + 9 });
+      labels.push(() => {
+        ctx.font = "700 12px system-ui, sans-serif";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(mx - tw / 2, my - 9, tw, 18);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(mx - tw / 2, my - 9, tw, 18);
+        ctx.fillStyle = color;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, mx, my + 0.5);
+      });
+    }
+    if (measure) {
+      // Keep name tags off the measured segment itself.
+      for (let s = 0.25; s < 1; s += 0.25) {
+        const cx = x0 + (x1 - x0) * s;
+        const cy = y0 + (y1 - y0) * s;
+        keepOut.push({ x0: cx - 4, y0: cy - 4, x1: cx + 4, y1: cy + 4 });
+      }
     }
   }
 }
 
-function drawPlayers(ctx: CanvasRenderingContext2D, state: RenderState, lookup: Lookup, highlight: ReadonlySet<string>, m: Map2) {
+function drawPlayers(ctx: CanvasRenderingContext2D, state: RenderState, lookup: Lookup, highlight: ReadonlySet<string>, m: Map2, keepOut: Box[] = []) {
   const r = Math.max(7, 0.95 * m.scale);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -301,14 +344,16 @@ function drawPlayers(ctx: CanvasRenderingContext2D, state: RenderState, lookup: 
     ctx.strokeStyle = INK;
     ctx.stroke();
   }
-  drawLabels(ctx, labels, r);
+  drawLabels(ctx, labels, r, keepOut);
 }
 
 /** Name tags for highlighted players, placed to avoid each other and the markers they label. */
-function drawLabels(ctx: CanvasRenderingContext2D, labels: { x: number; y: number; text: string }[], r: number) {
+function drawLabels(ctx: CanvasRenderingContext2D, labels: { x: number; y: number; text: string }[], r: number, keepOut: Box[] = []) {
   ctx.font = "600 11px system-ui, sans-serif";
   const h = 17;
-  const placed = labels.map(({ x, y }) => ({ x0: x - r, y0: y - r, x1: x + r, y1: y + r }));
+  const placed: Box[] = [...labels.map(({ x, y }) => ({ x0: x - r, y0: y - r, x1: x + r, y1: y + r })), ...keepOut];
+  // Prefer the side facing away from the other highlighted players and the measurement.
+  const centres = placed.map((b) => ({ x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2 }));
   const overlaps = (a: (typeof placed)[number]) => placed.some((b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1);
   for (const { x, y, text } of labels) {
     const w = ctx.measureText(text).width + 8;
@@ -317,7 +362,10 @@ function drawLabels(ctx: CanvasRenderingContext2D, labels: { x: number; y: numbe
       { cx: x, cy: y + r + 11 },
       { cx: x + r + 5 + w / 2, cy: y },
       { cx: x - r - 5 - w / 2, cy: y },
-    ].map(({ cx, cy }) => ({ cx, cy, box: { x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 } }));
+    ]
+      .map(({ cx, cy }) => ({ cx, cy, box: { x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 } }))
+      .map((c) => ({ ...c, room: Math.min(...centres.filter((q) => Math.hypot(q.x - x, q.y - y) > 1).map((q) => Math.hypot(q.x - c.cx, q.y - c.cy)), 1e9) }))
+      .sort((a, b) => b.room - a.room);
     const pick = candidates.find((c) => !overlaps(c.box)) ?? candidates[0];
     placed.push(pick.box);
     ctx.fillStyle = INK;

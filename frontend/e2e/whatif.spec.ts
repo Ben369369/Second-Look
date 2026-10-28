@@ -7,6 +7,9 @@ test("what-if: simulated comparison, assumption change, stress test", async ({ p
   await expect(rec).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("action-hold")).toContainText("of 200 rollouts");
   await expect(page.getByTestId("action-press_with_cover")).toContainText(/simulated/i);
+  // At the default assumptions hold clearly beats pressing earlier, so it carries the mark.
+  await expect(page.getByTestId("action-hold")).toHaveClass(/choice-mark/);
+  await expect(page.getByTestId("action-press_earlier")).not.toHaveClass(/choice-mark/);
   // The simulated pitch is clearly labelled.
   await expect(page.getByTestId("pitch-canvas")).toHaveAttribute("aria-label", /Simulated rollout/);
 

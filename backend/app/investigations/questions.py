@@ -54,6 +54,18 @@ OTHER_ACTION_RE = re.compile(
     r"\b(make (a|his|her|the) run|run (in )?(behind|forward|into|in)|made a run|drop(ped|ping)? (back|deep|in)|park(ed|ing)? the bus|"
     r"low block|shoot|shot|cross(ed)?|dribble|pass(ed)? (it|the ball)|switch(ed)? play|overlap)\b"
 )
+SUBJECT_RE = re.compile(
+    r"\b(should|did|does|was|is|has|had|could|would|can|will)\s+([a-z'’-]+)\s+(?:have\s+|has\s+|had\s+|been\s+)?"
+    r"(press|pressed|pressing|run|ran|make|made|hold|held|pass|passed|shoot|shot|go|went|move|moved|drop|dropped|stay|stayed|"
+    r"track|tracked|close|closed|cover|covered|sprint|sprinted|play|played|do|did)\b"
+)
+# Words that can fill that subject slot without being a name.
+SUBJECT_WORDS = {
+    "the", "he", "she", "they", "it", "his", "her", "their", "we", "you", "i", "a", "an", "that", "this", "anyone", "someone",
+    "everyone", "nobody", "somebody", "team", "player", "players", "defender", "defenders", "attacker", "attackers",
+    "midfielder", "midfielders", "winger", "striker", "keeper", "goalkeeper", "fullback", "full-back", "right-back",
+    "left-back", "harbor", "cedar", "number", "no", "shirt", "each", "every", "all", "both", "one", "who", "what",
+}
 SHIRT_RE = re.compile(r"(?:#\s?|\bnumber\s|\bno\.?\s?|\bshirt\s)(\d{1,2})\b")
 # Capitalised words that are not player names (question words, football terms, team words).
 NOT_NAMES = {
@@ -126,6 +138,17 @@ def unknown_names(view: SequenceView, question: str) -> list[str]:
         if opener and not re.match(r"\s+(should|was|did|is|could|would|has|had|pressed|made|ran)\b", question[m.end():], re.I):
             continue
         out.append(w)
+    # Lower-case names in the subject slot ("should messi press", "how far did messi run").
+    for m in SUBJECT_RE.finditer(question.lower()):
+        w = m.group(2)
+        base = re.sub(r"['’]s$", "", w)
+        if base not in known and base not in NOT_NAMES and base not in SUBJECT_WORDS and not any(o.lower() == base for o in out):
+            out.append(w)
+    # Shirt numbers nobody in this sequence wears: a reference was given but resolves to no one.
+    worn = {pl.number for pl in view.players.values()}
+    for num in SHIRT_RE.findall(_norm(question)):
+        if int(num) not in worn and f"#{int(num)}" not in out:
+            out.append(f"#{int(num)}")
     return out
 
 
@@ -344,10 +367,14 @@ def ask(view: SequenceView, question: str) -> AskResponse:
         supported_questions=CATALOGUE,
     )
     if r.unknown_names:
-        names = ", ".join(r.unknown_names[:3])
+        names = [n for n in r.unknown_names if not n.startswith("#")][:3]
+        numbers = [n for n in r.unknown_names if n.startswith("#")][:3]
+        missing = ([f"There is no player called {', '.join(names)} in this sequence."] if names else []) + (
+            [f"No player wears {', '.join(numbers)} in this sequence."] if numbers else []
+        )
         return AskResponse(
             **base, status="clarify", intent=r.intent, intent_label=LABELS.get(r.intent or ""), answer=[], facts=[], refused=[],
-            notes=[f"There is no player called {names} in this sequence. Name a Cedar FC or Harbor FC player, or use a shirt number such as #8."],
+            notes=[" ".join(missing) + " Name a Cedar FC or Harbor FC player, or use a shirt number such as #8."],
         )
     if r.other_decision:
         # Honest refusal: only the right-back's press can be simulated. Show the passing picture at that moment instead.

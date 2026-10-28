@@ -102,11 +102,17 @@ export function WhatIfView() {
   return (
     <Stack gap="xl">
       <section>
+        <Text className="kicker kicker-sim" mb={8}>
+          Simulated · {result ? `${result.config.rollouts} rollouts per choice` : "running"} · lower is safer
+        </Text>
         <Finding result={result} stale={stale || pending} error={error} />
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="xl" mt="lg" className={stale || pending ? "is-stale" : undefined}>
           {result?.actions.map((a) => {
             const rec = result.recommendation;
-            const best = rec.status === "recommend" && rec.action === a.action;
+            // The navy rule marks the choice the predeclared rule supports: the recommendation, or the
+            // safest choice wherever it clearly beats another one.
+            const clearBest = result.diffs.find((d) => d.metric === "danger" && d.diff >= 0.05 && d.ci95[0] > 0)?.better;
+            const best = (rec.status === "recommend" ? rec.action : clearBest) === a.action;
             return (
               <div key={a.action} className={`choice${best ? " choice-mark" : ""}`} data-testid={`action-${a.action}`}>
                 <Group justify="space-between" align="baseline" wrap="nowrap">
@@ -117,7 +123,7 @@ export function WhatIfView() {
                     simulated
                   </Text>
                 </Group>
-                <Text className="big-number" mt={6}>
+                <Text className="big-number" mt={6} style={best ? undefined : { color: "#9aa3b5" }}>
                   {a.danger.count} <span style={{ fontSize: "0.45em", fontWeight: 500 }}>of {a.danger.n}</span>
                 </Text>
                 <Text className="finding" fz={17} mt={2}>
@@ -286,6 +292,9 @@ export function WhatIfView() {
                   counts inside this simulator, not real-world probabilities.
                 </Text>
               )}
+              <Text fz="sm" mb="sm">
+                Decision rule, fixed before running: {result.recommendation.rule}
+              </Text>
               <List fz="sm" spacing={4} mb="sm">
                 {result.assumptions.map((x) => (
                   <List.Item key={x}>{x}</List.Item>
@@ -341,7 +350,8 @@ function Finding({ result, stale, error }: { result: ComparisonResult | null; st
         </Text>
       )}
       <Text fz="xs" c="dimmed" mt={6} maw={760}>
-        {stale ? "Showing the previous settings while the new ones run. " : ""}Rule, fixed before running: {rec.rule}
+        {stale ? "Showing the previous settings while the new ones run. " : ""}Lower is safer. A choice wins only if it leads by 5 points
+        and the 95% interval clears zero, a rule fixed before any run.
       </Text>
     </div>
   );

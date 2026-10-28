@@ -64,25 +64,49 @@ export function OverviewView({ go }: { go: (v: "investigate" | "whatif") => void
   const pairs = base?.diffs.filter((d) => d.metric === "danger") ?? [];
   const open = pairs.filter((d) => !clearPair(d));
   const lateRec = late?.recommendation;
+  const holdVsEarly = pairs.find((d) => new Set([d.better, d.other]).has("hold") && new Set([d.better, d.other]).has("press_earlier"));
+  // Only a pair that clears the predeclared rule gets the mark.
+  const safer = holdVsEarly && clearPair(holdVsEarly) ? holdVsEarly.better : null;
 
   return (
     <Stack gap="xl">
       <Grid gap={{ base: "lg", lg: 40 }} align="flex-start">
         <Grid.Col span={{ base: 12, lg: 5 }} data-testid="hero">
           <Text className="kicker kicker-sim" mb={10}>
-            Simulated · {base ? `${base.config.rollouts} replays per choice` : "replaying the next 8 seconds"}
+            Simulated · {base ? `${base.config.rollouts} replays per choice` : "replaying the next 8 seconds"} · lower is safer
           </Text>
           <Title order={1} c="navy.9" className="page-title" mb="lg">
             {QUESTION}
           </Title>
           {base && late && early && hold ? (
             <>
-              <Text className="big-number" data-testid="hero-number">
-                {early.count} of {early.n}
+              <Text className="verdict" data-testid="hero-verdict">
+                {holdVsEarly && clearPair(holdVsEarly)
+                  ? holdVsEarly.better === "hold"
+                    ? "No. Holding was safer."
+                    : "Yes. Pressing earlier was safer."
+                  : "Too close to call."}
               </Text>
-              <Text className="finding" mt={8}>
-                replays end with Harbor in a dangerous position when {presser} presses earlier. When he holds his position:{" "}
-                <span className="tabular">{hold.count}</span>.
+              <Group gap={28} align="flex-end" mt="md" wrap="nowrap" data-testid="hero-number">
+                <div className={`duel${safer === "hold" ? " duel-safe" : ""}`}>
+                  <div className="big-number">{hold.count}</div>
+                  <Text fz="sm" fw={600} c={safer === "hold" ? "navy.9" : "dimmed"}>
+                    holds position
+                  </Text>
+                </div>
+                <Text fz="lg" c="dimmed" pb={22}>
+                  vs
+                </Text>
+                <div className={`duel${safer === "press_earlier" ? " duel-safe" : ""}`}>
+                  <div className="big-number">{early.count}</div>
+                  <Text fz="sm" fw={600} c={safer === "press_earlier" ? "navy.9" : "dimmed"}>
+                    presses earlier
+                  </Text>
+                </div>
+              </Group>
+              <Text className="finding" mt="md">
+                Harbor reach a dangerous position in {hold.count} of {hold.n} replays when {presser} holds, and in {early.count} when he presses
+                earlier.
               </Text>
               <Text className="finding" mt="md" data-testid="hero-flip">
                 {open.length
@@ -99,8 +123,8 @@ export function OverviewView({ go }: { go: (v: "investigate" | "whatif") => void
                   : ""}
               </Text>
               <Text fz="xs" c="dimmed" mt="md" maw={460}>
-                Counts from a rule-based simulator of this synthetic move, not a prediction. A choice is only called clear if it beats the
-                other by 5 points with the 95% interval above zero, a rule fixed before any run.
+                Counts from a rule-based simulator of this synthetic move, not a prediction. A choice wins only if it leads by 5 points and the
+                95% interval clears zero.
               </Text>
             </>
           ) : (

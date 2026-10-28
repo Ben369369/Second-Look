@@ -78,7 +78,7 @@ Cached model responses are never replayed as live runs.
 - malformed output getting one repair, then fallback;
 - invalid tool arguments.
 
-A live Foundry smoke test runs only with `SECOND_LOOK_LIVE_TESTS=1`, and is reported as **skipped** otherwise. `tests/conftest.py` forces offline mode for the regular suite. With Foundry Local it passed: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU.
+A live Foundry smoke test runs only with `SECOND_LOOK_LIVE_TESTS=1`, and is reported as **skipped** otherwise. `tests/conftest.py` forces offline mode for the regular suite. With Foundry Local it passed; in a small benchmark of the current workflow, 4 of 4 fresh runs of the pressing question completed with the live agents (no fallback), 70–196 s each on an RTX 5070 laptop GPU, with the reversal search run and the validator rejecting 12 model interpretations (docs/EVALUATION.md).
 
 ## Configuration
 

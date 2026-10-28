@@ -42,6 +42,8 @@ TRACKED = {"tracked_running", "defender_distance", "lane_access", "open_lanes", 
 
 ROUTING_QS = [
     ("Should Messi press earlier?", ("clarify",)),
+    ("should messi press earlier?", ("clarify",)),
+    ("Should #99 press earlier?", ("clarify",)),
     ("Should Kiprono make a run or hold?", ("unsupported",)),
     ("What if Cedar parked the bus?", ("unsupported",)),
 ]
@@ -214,13 +216,45 @@ def main() -> None:
         "pipeline_a_invalid": sum(r["invalid"] for r in a_rows),
         "not_run": {
             "B": "single-agent baseline not built",
-            "C-live": "only an on-device model is available (about 80 s per investigation); a live benchmark was not run",
+            "C-live": "only a small on-device smoke benchmark (docs/live_results.json); answer quality not rated",
         },
     }
     out = {"summary": summary, "c_offline": rows, "pipeline_a": a_rows, "routing": routing}
     (ROOT / "docs" / "evaluation_results.json").write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     write_markdown(out)
     print(json.dumps(summary, indent=2))
+
+
+def live_section() -> list[str]:
+    """Summary of docs/live_results.json, written by scripts/live_benchmark.py against the running app."""
+    path = ROOT / "docs" / "live_results.json"
+    if not path.exists():
+        return []
+    live = json.loads(path.read_text(encoding="utf-8"))
+    runs = live["runs"]
+    press = [r for r in runs if r["question"].startswith("Should the right-back")]
+    done = [r for r in press if r["status"] == "complete" and not r["fallback"]]
+    times = sorted(r["elapsed_s"] for r in press)
+    out = [
+        "",
+        f"## Live on-device runs (C-live, small; {live['run_at']})",
+        "",
+        f"Fresh investigations through the running app's API with {live['provider']} on one laptop GPU (`scripts/live_benchmark.py`). A smoke benchmark of the current producer contract (selected fact ids plus interpretations), not an evaluation of answer quality.",
+        "",
+        f"- **Pressing question, {len(press)} runs:** {len(done)} completed with the live agents (no fallback); "
+        f"elapsed {times[0]:.0f}–{times[-1]:.0f} s (median {statistics.median(times):.0f} s); reversal search ran in {sum(r['reversal_search_ran'] for r in press)}; "
+        f"rule verdict shown in {sum(r['verdict_shown'] for r in press)}; analyst and fan exports worked in {sum(all(r['exports_ok'].values()) for r in press)}.",
+        f"- **Repairs and rejections:** {sum(r['repairs'] for r in press)} repair steps and {sum(r['rejected'] for r in press)} rejected claims across those runs. Rejected claims are model interpretations the validator refused (for example causal wording or a hand-written comparison); they are never shown as answers.",
+        "",
+        "| Question | Outcome | Mode | Elapsed (s) | Model calls | Tool calls | Claims shown | Rejected | Repairs | Search ran | Exports |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for r in runs:
+        out.append(
+            f"| {r['question']} | {r['outcome']} | {r['provider_mode']} | {r['elapsed_s']:.0f} | {r['model_calls']} | {r['tool_calls']} | {r['claims']} | {r['rejected']} | {r['repairs']} | "
+            f"{'yes' if r['reversal_search_ran'] else 'no'} | {'ok' if all(r['exports_ok'].values()) else 'failed'} |"
+        )
+    return out
 
 
 def write_markdown(out: dict) -> None:
@@ -236,7 +270,7 @@ def write_markdown(out: dict) -> None:
         "  - 9 × press recorded: 4 normal press, 3 early press, 2 with a recorded cover.",
         "  - 2 × no press recorded: the right-back's press would come after the ball has moved on.",
         "  - 1 × event-only: all tracking removed.",
-        "- **Pipelines.** **A**: deterministic event recap (event facts only). **C-offline**: the full tool pipeline with the rule-based router, run on the pressing question plus 3 other questions per variant. **B** (a single model agent with the same tools) was **not built**, so this evaluation cannot say whether four agents beat one. **C-live** (the four agents with a live model) was **not benchmarked**: the cloud model was blocked (Azure error 715-123420) and the on-device model (Foundry Local, `qwen3-8b`) takes about 80 s per investigation. It has one recorded smoke run (4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s), which is one run, not an evaluation.",
+        "- **Pipelines.** **A**: deterministic event recap (event facts only). **C-offline**: the full tool pipeline with the rule-based router, run on the pressing question plus 3 other questions per variant. **B** (a single model agent with the same tools) was **not built**, so this evaluation cannot say whether four agents beat one. **C-live** (the four agents with a live model) has only a small smoke benchmark, reported below: the cloud model was blocked (Azure error 715-123420) and the on-device model (Foundry Local, `qwen3-8b`) takes one to three minutes per investigation.",
         "",
         "## Results (C-offline)",
         "",
@@ -247,7 +281,7 @@ def write_markdown(out: dict) -> None:
         *[f"  - {cat}: {r} of {n}" for cat, (r, n) in s["adversarial_by_category"].items()],
         "",
         "  Factual claims must be the code-rendered sentence of the fact they cite, so any rewording (number, unit, event, subjects) is rejected. Interpretations are free text. They are only checked for numbers, citations, named players, certainty and causal wording, unsimulated counterfactuals and hand-written comparisons between choices, and passing those checks does not make an interpretation true.",
-        f"- **Routing:** {s['routing_met']} of {s['routing_checks']} off-catalogue questions (an unknown player, an attacker's run, an unmodelled team what-if) were refused or sent back for clarification, with no simulated claim shown.",
+        f"- **Routing:** {s['routing_met']} of {s['routing_checks']} off-catalogue questions (an unknown player, in capitals or lower case; a shirt number nobody wears; an attacker's run; an unmodelled team what-if) were refused or sent back for clarification, with no simulated claim shown.",
         f"- **Latency** (offline, Windows laptop): pressing question with a fresh 200-rollout simulation, median {s['latency_ms_median_pressing_with_simulation']} ms (max {s['latency_ms_max']} ms); questions without simulation, a few milliseconds (median across all 48: {s['latency_ms_median_all']} ms).",
         "",
         "| Variant | Class | Outcome | Claims | Simulated | Tracked facts | Met | Challenger baseline (patient, cover 0.6 s) | Settings that change it |",
@@ -258,6 +292,7 @@ def write_markdown(out: dict) -> None:
         lines.append(
             f"| {r['variant']} | {r['class']} | {r['outcome']} | {r['claims']} | {r['simulated_claims']} | {r['tracked_facts']} | {'yes' if r['meets_expectation'] else '**no**'} | {r['challenger_baseline'] or '—'} | {ch} |"
         )
+    lines += live_section()
     lines += [
         "",
         "## Pipeline A (deterministic event recap)",

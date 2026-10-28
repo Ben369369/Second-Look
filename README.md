@@ -4,7 +4,7 @@
 
 Football arguments ("should the right-back have pressed earlier?") usually hide their assumptions. Second Look makes one inspectable. You watch the moment, see the measured evidence, compare what *might* have happened under alternative choices in a transparent simulator, and see which assumptions change the answer.
 
-In this move, pressing earlier lets the opponent into a dangerous position in **71 of 200** simulated replays, against **30** when the right-back holds. Pressing with a covering teammate (37) is too close to call against holding, until the cover arrives at 1.2 s instead of 0.6 s, when holding becomes the clear call.
+In this move, **holding was safer**: the opponent reaches a dangerous position in **30 of 200** simulated replays when the right-back holds, against **71** when he presses earlier (lower is safer). Pressing with a covering teammate (37) is too close to call against holding, until the cover arrives at 1.2 s instead of 0.6 s, when holding becomes the clear call.
 
 ![The press: the question, the finding, and the measured gap on the pitch](docs/images/the-press.png)
 
@@ -31,7 +31,7 @@ What it is **not**: a real-match tracking system, a judge of real players, or a 
 |---|---|
 | Replay, facts, evidence, simulator, challenger, What-if page, audience modes, recap/overlay | Built and tested; deployed |
 | Agent Framework workflow (4 agents, validator, retries, fallback) | Built and tested through the real framework loop with scripted model replies |
-| Live model, on-device (Foundry Local) | **Connected and verified locally.** The four agents run on `qwen3-8b` through Microsoft Foundry Local on the developer's laptop. Live test: 4 model calls, 3 tool calls, 4 claims approved, 0 rejected, about 83 s on an RTX 5070 laptop GPU. Also verified end to end in the UI. |
+| Live model, on-device (Foundry Local) | **Connected and verified locally.** The four agents run on `qwen3-8b` through Microsoft Foundry Local on the developer's laptop. Live: in a small benchmark of the current workflow, 4 of 4 fresh runs of the pressing question completed with the live agents (no fallback), 70–196 s each on an RTX 5070 laptop GPU, with the reversal search run and the validator rejecting 12 model interpretations (docs/EVALUATION.md). Also verified end to end in the UI. |
 | Live model, cloud (Microsoft Foundry) | **Not connected.** A Foundry resource and project exist, but every model deployment on the available Azure for Students subscription was blocked by Azure error 715-123420. The public Vercel demo therefore runs in labelled offline mode. |
 | Evaluation | 12 held-out variants: predeclared behaviour met 12/12; 139/139 injected fabrications rejected across 14 kinds; 36/36 off-catalogue questions refused ([docs/EVALUATION.md](docs/EVALUATION.md)) |
 
